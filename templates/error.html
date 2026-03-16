@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ title or 'Error' }} — Drizl{% endblock %}
+{% block body %}
+<div class="auth-page" style="min-height:100vh">
+  <a href="/" class="auth-logo">drizl.</a>
+  <div class="auth-card" style="text-align:center">
+    <div style="font-size:48px;margin-bottom:16px">⚠️</div>
+    <h1 class="auth-title">{{ title or 'Error' }}</h1>
+    <p class="auth-sub">{{ msg or 'Something went wrong.' }}</p>
+    <a href="/" class="btn btn-primary" style="margin-top:8px">← Back to Drizl</a>
+  </div>
+</div>
+{% endblock %}

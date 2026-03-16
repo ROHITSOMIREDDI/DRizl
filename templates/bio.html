@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Bio — {{ bio.display_name }} — Drizl{% endblock %}
+{% block body %}
+<div class="bio-page">
+  <div class="bio-wrap">
+    <div class="bio-header">
+      <div class="avatar-ring">
+        <div class="avatar-inner">{{ bio.avatar_initial }}</div>
+        <div class="live-badge"></div>
+      </div>
+      <div class="bio-username">@{{ bio.username }}</div>
+      <div class="bio-name">{{ bio.display_name }}</div>
+      {% if bio.bio %}<div class="bio-text">{{ bio.bio }}</div>{% endif %}
+      {% if bio.tags %}
+      <div class="bio-tags">
+        {% for tag in bio.tags %}<span class="bio-tag">{{ tag }}</span>{% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="links-section">
+      <div class="links-label">Links</div>
+      {% for link in bio.links %}
+      <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer"
+         class="bio-link {% if bio.featured is not none and loop.index0 == bio.featured %}featured{% endif %}"
+         onclick="trackClick(this)">
+        {% if bio.featured is not none and loop.index0 == bio.featured %}
+        <span class="featured-chip">✦ Featured</span>
+        {% endif %}
+        <div class="link-icon-box" style="background:rgba(124,111,255,0.12)">{{ link.icon or '🔗' }}</div>
+        <div class="link-body">
+          <div class="link-title">{{ link.title }}</div>
+          {% if link.desc %}<div class="link-desc">{{ link.desc }}</div>{% endif %}
+          {% if link.clicks %}<div class="link-clicks">↗ {{ "{:,}".format(link.clicks) }} clicks</div>{% endif %}
+        </div>
+        <div class="link-arrow">↗</div>
+      </a>
+      {% else %}
+      <div style="text-align:center;color:var(--text3);padding:30px">No links added yet.</div>
+      {% endfor %}
+    </div>
+
+    <div class="bio-footer">
+      <div class="powered">Made with <span>drizl.</span></div>
+      <a href="/register" class="drizl-link">Create your free bio page →</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

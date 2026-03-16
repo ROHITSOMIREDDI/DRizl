@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Sign in — Drizl{% endblock %}
+{% block body %}
+<div class="auth-page">
+  <a href="/" class="auth-logo">drizl.</a>
+  <div class="auth-card">
+    <h1 class="auth-title">Welcome back</h1>
+    <p class="auth-sub">Sign in to your Drizl account</p>
+    <div id="authError" class="form-error" style="display:none;margin-bottom:14px;padding:10px 14px;background:var(--red-bg);border:1px solid rgba(248,113,113,0.2);border-radius:8px"></div>
+    <div class="form-group">
+      <label class="form-label" for="email">Email</label>
+      <input class="input" id="email" type="email" placeholder="you@example.com" autocomplete="email" />
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="password">Password</label>
+      <input class="input" id="password" type="password" placeholder="Your password" autocomplete="current-password" />
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:4px" id="loginBtn" onclick="doLogin()">
+      Sign in →
+    </button>
+    <p style="text-align:center;margin-top:20px;font-size:13px;color:var(--text3)">
+      Don't have an account? <a href="/register" style="color:var(--accent2)">Sign up free</a>
+    </p>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+async function doLogin() {
+  const btn = document.getElementById('loginBtn');
+  const errEl = document.getElementById('authError');
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  if (!email || !password) { showErr('Please fill in all fields'); return; }
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) { showErr(data.error || 'Login failed'); return; }
+    window.location.href = '/dashboard';
+  } catch(e) { showErr('Network error. Please try again.'); }
+  finally { btn.disabled = false; btn.textContent = 'Sign in →'; }
+}
+function showErr(msg) {
+  const el = document.getElementById('authError');
+  el.textContent = msg; el.style.display = 'block';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+</script>
+{% endblock %}

@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}Drizl — Drop the long. Share the short.{% endblock %}
+
+{% block body %}
+<!-- NAV -->
+<nav class="l-nav">
+  <div class="l-logo">drizl<span>.</span></div>
+  <div class="l-navlinks">
+    <a href="#features">Features</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#api">API</a>
+    <a href="/login">Sign in</a>
+    <a href="/register" class="btn btn-primary btn-sm">Get started free</a>
+  </div>
+  <button class="nav-mobile-toggle" id="menuToggle" aria-label="Menu">☰</button>
+</nav>
+
+<!-- HERO -->
+<section class="l-hero">
+  <div class="hero-glow"></div>
+  <div class="hero-badge animate-fadeUp">
+    <div class="hero-badge-dot"></div>
+    Now live — Full Stack URL Shortener
+  </div>
+  <h1 class="l-title animate-fadeUp" style="animation-delay:.1s">
+    Drop the long.<br>
+    <span class="acc">Share</span> the <span class="dim">short.</span>
+  </h1>
+  <p class="l-sub animate-fadeUp" style="animation-delay:.2s">
+    Shorten, track, and control your links.<br>
+    <strong>Analytics, A/B testing, QR codes</strong> — all in one place.
+  </p>
+
+  <div class="l-input-row animate-fadeUp" id="shortenBox" style="animation-delay:.3s">
+    <input class="l-input" id="urlInput" placeholder="Paste your long URL here..." autocomplete="off" />
+    <button class="l-shorten-btn" id="shortenBtn" onclick="doShorten()">Shorten →</button>
+  </div>
+  <div class="l-result" id="result">
+    <span class="l-result-link" id="resultLink"></span>
+    <button class="l-copy-btn" id="copyBtn" onclick="copyLink()">Copy link</button>
+  </div>
+  <p class="l-note animate-fadeUp" style="animation-delay:.4s">No account needed to try · Free forever · 56 billion possible links</p>
+</section>
+
+<!-- STATS -->
+<div class="l-stats">
+  <div class="l-stat"><div class="l-stat-num">56<span>B</span></div><div class="l-stat-label">Possible short codes</div></div>
+  <div class="l-stat"><div class="l-stat-num">&lt;10<span>ms</span></div><div class="l-stat-label">Cached redirect speed</div></div>
+  <div class="l-stat"><div class="l-stat-num">17</div><div class="l-stat-label">Features built-in</div></div>
+  <div class="l-stat"><div class="l-stat-num">100<span>%</span></div><div class="l-stat-label">Free to use</div></div>
+</div>
+
+<!-- FEATURES -->
+<section class="l-features" id="features">
+  <div class="eyebrow">Everything you need</div>
+  <h2 class="section-title">Not just a shortener.<br>A link <em style="color:var(--accent2)">platform.</em></h2>
+  <p class="section-sub">Every feature designed for people who actually care about their links.</p>
+
+  <div class="feat-grid">
+    <div class="feat-card highlight">
+      <div class="feat-icon ic-purple">⚡</div>
+      <div class="feat-name">Sub-10ms redirects</div>
+      <div class="feat-desc">Redis-cached redirect engine. Your visitors never wait — not even for a millisecond.</div>
+      <span class="feat-tag tag-purple">Redis powered</span>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon ic-green">📊</div>
+      <div class="feat-name">Real-time analytics</div>
+      <div class="feat-desc">See who clicked, from where, on what device. Country charts, browser splits, timelines.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon ic-amber">🔀</div>
+      <div class="feat-name">A/B split testing</div>
+      <div class="feat-desc">One link, two destinations. Route traffic 50/50 and see which converts better.</div>
+      <span class="feat-tag tag-green">Unique feature</span>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon ic-teal">🌍</div>
+      <div class="feat-name">Geo &amp; device targeting</div>
+      <div class="feat-desc">Send iOS users to the App Store, Indian visitors to a localised page. Automatically.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon ic-pink">🔒</div>
+      <div class="feat-name">Link controls</div>
+      <div class="feat-desc">Password protection, expiry by date or click count. Full control over every link.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon ic-blue">⚙️</div>
+      <div class="feat-name">Public REST API</div>
+      <div class="feat-desc">Shorten links programmatically. API key auth with sliding-window rate limiting.</div>
+    </div>
+  </div>
+</section>
+
+<!-- DEMO / MOCKUP -->
+<section class="demo-section">
+  <div class="demo-inner">
+    <div class="demo-text">
+      <div class="eyebrow">Dashboard</div>
+      <h2 class="section-title" style="font-size:30px">All your links.<br>One clean view.</h2>
+      <p class="section-sub" style="font-size:14px">See clicks, copy links, manage expiry — everything in one dashboard built for speed.</p>
+      <div class="demo-checklist">
+        <div class="demo-check"><div class="check-circle">✓</div>See total clicks per link</div>
+        <div class="demo-check"><div class="check-circle">✓</div>Download QR codes instantly</div>
+        <div class="demo-check"><div class="check-circle">✓</div>Set custom slugs like drizl/launch</div>
+        <div class="demo-check"><div class="check-circle">✓</div>Edit targeting rules anytime</div>
+      </div>
+    </div>
+    <div class="mockup">
+      <div class="mockup-bar">
+        <div class="dot d1"></div><div class="dot d2"></div><div class="dot d3"></div>
+        <div class="mockup-url">drizl/dashboard</div>
+      </div>
+      <div class="mockup-body">
+        <div style="font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--text2);margin-bottom:12px">Your links</div>
+        <div class="mock-link-row"><div class="mock-short">drizl/launch</div><div class="mock-clicks">2.4k clicks</div></div>
+        <div class="mock-link-row"><div class="mock-short">drizl/x7Kp2</div><div class="mock-clicks">847 clicks</div></div>
+        <div class="mock-link-row"><div class="mock-short">drizl/resume</div><div class="mock-clicks">312 clicks</div></div>
+        <div class="mock-chart">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Clicks this week</div>
+          <div class="mock-bars">
+            <div class="mock-bar" style="height:30%;opacity:.4"></div>
+            <div class="mock-bar" style="height:50%;opacity:.5"></div>
+            <div class="mock-bar" style="height:40%;opacity:.6"></div>
+            <div class="mock-bar" style="height:70%;opacity:.7"></div>
+            <div class="mock-bar" style="height:55%;opacity:.8"></div>
+            <div class="mock-bar" style="height:90%;opacity:.9"></div>
+            <div class="mock-bar" style="height:100%;background:var(--accent2)"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="l-cta-section" id="pricing">
+  <div class="eyebrow">Get started</div>
+  <h2 class="section-title" style="margin-bottom:16px">Ready to drizl?</h2>
+  <p style="color:var(--text2);font-size:16px;margin-bottom:32px">Free forever. No credit card. Just better links.</p>
+  <a href="/register" class="btn btn-primary btn-lg">Create your free account →</a>
+</section>
+
+<!-- FOOTER -->
+<footer class="l-footer">
+  <div class="l-logo" style="font-size: 20px; margin-bottom: 8px">drizl<span>.</span></div>
+  <div class="l-footer-note">Full Stack Development Project</div>
+  <div style="font-size: 14px; font-weight: 600; color: var(--text2); margin-top: 4px">Made with ❤️ by Rohit Somireddi</div>
+  <div style="font-size: 11px; color: var(--text3); margin-top: 16px; letter-spacing: 0.05em; text-transform: uppercase">Drop the long. Share the short.</div>
+</footer>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const CODES = ['x7Kp2','mN3Qr','pL9Wz','kR2Vx','jT5Ym'];
+let copied = false;
+
+function doShorten() {
+  const val = document.getElementById('urlInput').value.trim();
+  if (!val) return;
+  const code = CODES[Math.floor(Math.random() * CODES.length)];
+  document.getElementById('resultLink').textContent = window.location.host + '/' + code;
+  document.getElementById('result').classList.add('show');
+  document.getElementById('urlInput').value = '';
+}
+
+function copyLink() {
+  if (copied) return;
+  const txt = document.getElementById('resultLink').textContent;
+  navigator.clipboard?.writeText('http://' + txt).catch(() => {});
+  const btn = document.getElementById('copyBtn');
+  btn.textContent = 'Copied!'; copied = true;
+  setTimeout(() => { btn.textContent = 'Copy link'; copied = false; }, 2000);
+}
+
+document.getElementById('urlInput').addEventListener('keydown', e => { if (e.key === 'Enter') doShorten(); });
+</script>
+{% endblock %}

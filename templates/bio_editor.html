@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Bio Page Editor — Drizl{% endblock %}
+{% block body %}
+<div class="d-layout">
+  {% include "partials/sidebar.html" %}
+  <div class="d-main">
+    <div class="d-topbar">
+      <div class="d-topbar-title">Bio Page</div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-ghost btn-sm" id="previewBtn" onclick="openPreview()" style="display:none">👁 Preview</button>
+        <button class="btn btn-primary btn-sm" onclick="saveBio()">Save changes</button>
+      </div>
+    </div>
+    <div class="d-content" style="max-width:700px">
+      <div id="bioError" style="display:none;padding:10px 14px;background:var(--red-bg);border:1px solid rgba(248,113,113,0.2);border-radius:8px;color:var(--red);font-size:13px;margin-bottom:16px"></div>
+
+      <!-- PROFILE -->
+      <div class="card" style="margin-bottom:16px">
+        <div style="font-family:var(--font-display);font-size:15px;font-weight:700;margin-bottom:16px">Profile</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Username *</label>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="color:var(--text3);font-size:13px">/b/</span>
+              <input class="input" id="bio-username" placeholder="yourname" style="flex:1"/>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Display name *</label>
+            <input class="input" id="bio-displayname" placeholder="Your Name"/>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:14px;margin-bottom:0">
+          <label class="form-label">Bio</label>
+          <textarea class="input" id="bio-bio" rows="2" placeholder="A short bio about yourself..." style="resize:vertical"></textarea>
+        </div>
+        <div class="form-group" style="margin-top:14px;margin-bottom:0">
+          <label class="form-label">Tags <span style="color:var(--text3);font-weight:400">(comma separated)</span></label>
+          <input class="input" id="bio-tags" placeholder="Next.js, Node.js, PostgreSQL"/>
+        </div>
+      </div>
+
+      <!-- LINKS -->
+      <div class="card" style="margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div style="font-family:var(--font-display);font-size:15px;font-weight:700">Links</div>
+          <button class="btn btn-ghost btn-sm" onclick="addLink()">+ Add link</button>
+        </div>
+        <div id="bio-links-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+let bioLinks = [];
+
+async function loadBio() {
+  const r = await fetch('/api/bio'); if (!r.ok) return;
+  const d = await r.json();
+  if (d.bio) {
+    document.getElementById('bio-username').value    = d.bio.username || '';
+    document.getElementById('bio-displayname').value = d.bio.display_name || '';
+    document.getElementById('bio-bio').value         = d.bio.bio || '';
+    document.getElementById('bio-tags').value        = (d.bio.tags || []).join(', ');
+    bioLinks = d.bio.links || [];
+    document.getElementById('previewBtn').style.display = 'inline-flex';
+  }
+  renderLinks();
+}
+
+function renderLinks() {
+  const list = document.getElementById('bio-links-list');
+  if (!bioLinks.length) {
+    list.innerHTML = '<div style="text-align:center;color:var(--text3);padding:20px;font-size:13px">No links yet. Click "+ Add link" to add one.</div>';
+    return;
+  }
+  list.innerHTML = bioLinks.map((l, i) => `
+    <div style="display:flex;align-items:flex-start;gap:10px;padding:12px;background:var(--bg3);border-radius:10px;margin-bottom:10px;border:1px solid var(--border)">
+      <div style="flex:1;display:grid;grid-template-columns:1fr 2fr auto;gap:8px;align-items:center">
+        <input class="input" value="${l.icon||'🔗'}" oninput="bioLinks[${i}].icon=this.value" placeholder="Icon" style="font-size:16px;text-align:center" />
+        <input class="input" value="${l.title||''}" oninput="bioLinks[${i}].title=this.value" placeholder="Title" />
+        <input class="input" value="${l.url||''}" oninput="bioLinks[${i}].url=this.value" placeholder="https://..." style="grid-column:2/4"/>
+        <textarea class="input" rows="1" oninput="bioLinks[${i}].desc=this.value" placeholder="Short description (optional)" style="grid-column:1/4;resize:none">${l.desc||''}</textarea>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button class="btn btn-ghost btn-sm" onclick="removeLink(${i})" style="color:var(--red)">✕</button>
+        ${i > 0 ? `<button class="btn btn-ghost btn-sm" onclick="moveLink(${i},-1)">↑</button>` : ''}
+        ${i < bioLinks.length-1 ? `<button class="btn btn-ghost btn-sm" onclick="moveLink(${i},1)">↓</button>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+function addLink() {
+  bioLinks.push({title:'', url:'', icon:'🔗', desc:''});
+  renderLinks();
+}
+
+function removeLink(i) { bioLinks.splice(i,1); renderLinks(); }
+
+function moveLink(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= bioLinks.length) return;
+  [bioLinks[i], bioLinks[j]] = [bioLinks[j], bioLinks[i]];
+  renderLinks();
+}
+
+async function saveBio() {
+  const username    = document.getElementById('bio-username').value.trim();
+  const displayName = document.getElementById('bio-displayname').value.trim();
+  if (!username || !displayName) { showBioErr('Username and display name required'); return; }
+  const tags = document.getElementById('bio-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  const payload = { username, display_name: displayName, bio: document.getElementById('bio-bio').value.trim(), tags, links: bioLinks };
+  const r = await fetch('/api/bio', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+  const d = await r.json();
+  if (!r.ok) { showBioErr(d.error||'Save failed'); return; }
+  showToast('Bio page saved!', 'success');
+  document.getElementById('previewBtn').style.display = 'inline-flex';
+}
+
+function openPreview() {
+  const u = document.getElementById('bio-username').value.trim();
+  if (u) window.open('/b/' + u, '_blank');
+}
+
+function showBioErr(msg) {
+  const el = document.getElementById('bioError'); el.textContent = msg; el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 4000);
+}
+
+loadBio();
+</script>
+{% endblock %}

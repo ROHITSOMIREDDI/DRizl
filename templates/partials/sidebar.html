@@ -1,0 +1,32 @@
+<aside class="d-sidebar">
+  <div class="d-logo">drizl.</div>
+  <div class="d-nav-section">Main</div>
+  <a href="/dashboard" class="d-nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}">⊞ Dashboard</a>
+  <a href="/dashboard/links" class="d-nav-item {% if request.endpoint == 'my_links' %}active{% endif %}">🔗 My Links</a>
+  <a href="/dashboard/bio" class="d-nav-item {% if request.endpoint == 'bio_editor' %}active{% endif %}">👤 Bio Page</a>
+  <div class="d-nav-section">Developer</div>
+  <a href="/dashboard/apikeys" class="d-nav-item {% if request.endpoint == 'apikeys_page' %}active{% endif %}">⚙ API Keys</a>
+  <div class="d-nav-item" onclick="openApiDocs()">📄 API Docs</div>
+  <div class="d-nav-section">Account</div>
+  <a href="/dashboard/settings" class="d-nav-item {% if request.endpoint == 'settings_page' %}active{% endif %}">⚙ Settings</a>
+  <div class="d-nav-bottom">
+    <div class="d-user">
+      <div class="d-avatar">{{ current_user.username[0].upper() if current_user else 'D' }}</div>
+      <div>
+        <div class="d-uname">{{ current_user.username if current_user else 'User' }}</div>
+        <div class="d-uplan">Free Plan · By <b>Rohit Somireddi</b></div>
+      </div>
+      <a href="/logout" class="d-act-btn" style="margin-left:auto" title="Logout">↩</a>
+    </div>
+    <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:10px" onclick="doLogout()">Sign out</button>
+  </div>
+</aside>
+<script>
+async function doLogout() {
+  await fetch('/api/auth/logout', {method:'POST'});
+  window.location.href = '/';
+}
+function openApiDocs() {
+  window.open('/health', '_blank');
+}
+</script>

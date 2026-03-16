@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Drizl{% endblock %}
+{% block body %}
+<div class="d-layout">
+  <!-- SIDEBAR -->
+  {% include "partials/sidebar.html" %}
+
+  <!-- MAIN -->
+  <div class="d-main">
+    <div class="d-topbar">
+      <div class="d-topbar-title">Dashboard</div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <div class="d-search">
+          <span style="color:var(--text3);font-size:14px">⌕</span>
+          <input id="searchInput" placeholder="Search links..." oninput="filterLinks(this.value)" />
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openNewLink()">+ New link</button>
+      </div>
+    </div>
+    <div class="d-content">
+      <!-- STAT CARDS -->
+      <div class="stat-grid" id="statGrid">
+        <div class="stat-card"><div class="stat-label">Total links</div><div class="stat-value" id="s-links">—</div><div class="stat-sub"><span class="stat-delta delta-up" id="s-links-d"></span></div></div>
+        <div class="stat-card"><div class="stat-label">Total clicks</div><div class="stat-value" id="s-clicks">—</div><div class="stat-sub"><span class="stat-delta delta-up" id="s-clicks-d"></span> this week</div></div>
+        <div class="stat-card"><div class="stat-label">Active links</div><div class="stat-value" id="s-active">—</div><div class="stat-sub" id="s-active-d"></div></div>
+        <div class="stat-card"><div class="stat-label">Top link</div><div class="stat-value mono" id="s-top" style="font-size:14px;padding-top:4px">—</div><div class="stat-sub" id="s-top-clicks"></div></div>
+      </div>
+
+      <div class="d-sh" style="margin-top:24px">
+        <div class="d-sh-title">Recent links</div>
+        <div class="d-filters">
+          <button class="d-ftab active" onclick="setFilter('all',this)">All</button>
+          <button class="d-ftab" onclick="setFilter('active',this)">Active</button>
+          <button class="d-ftab" onclick="setFilter('ab',this)">A/B</button>
+          <button class="d-ftab" onclick="setFilter('protected',this)">Protected</button>
+          <button class="d-ftab" onclick="setFilter('expired',this)">Expired</button>
+        </div>
+      </div>
+
+      <div class="table-wrap" id="linksTable">
+        <div class="d-thead">
+          <div class="d-th">Short link</div>
+          <div class="d-th">Destination</div>
+          <div class="d-th">Clicks</div>
+          <div class="d-th">Status</div>
+          <div class="d-th">Created</div>
+          <div class="d-th">Actions</div>
+        </div>
+        <div id="linksBody"><div style="padding:40px;text-align:center;color:var(--text3)"><div class="spinner" style="margin:0 auto"></div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NEW LINK MODAL -->
+{% include "partials/new_link_modal.html" %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let allLinks = [], activeFilter = 'all';
+
+async function loadStats() {
+  const r = await fetch('/api/analytics'); if (!r.ok) return;
+  const d = await r.json();
+  document.getElementById('s-links').textContent  = d.total_links || 0;
+  document.getElementById('s-clicks').textContent = (d.total_clicks || 0).toLocaleString();
+  document.getElementById('s-clicks-d').textContent = '+' + (d.recent_clicks || 0);
+  document.getElementById('s-active').textContent = d.active_links || 0;
+  if (d.top_link) {
+    document.getElementById('s-top').textContent = '/' + d.top_link.short_code;
+    document.getElementById('s-top-clicks').textContent = d.top_link.clicks + ' clicks';
+  }
+}
+
+async function loadLinks() {
+  const r = await fetch('/api/links'); if (!r.ok) return;
+  const d = await r.json();
+  allLinks = d.links || [];
+  renderLinks(allLinks);
+}
+
+function renderLinks(links) {
+  const filtered = activeFilter === 'all' ? links : links.filter(l => l.status === activeFilter);
+  const body = document.getElementById('linksBody');
+  if (!filtered.length) {
+    body.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3)">No links found</div>';
+    return;
+  }
+  body.innerHTML = filtered.map(l => `
+    <div class="table-row d-trow" style="display:grid;grid-template-columns:2fr 3fr 70px 80px 80px 90px;padding:12px 14px;align-items:center">
+      <div>
+        <div class="d-code mono">${l.short_code}</div>
+        <div class="d-code-sub mono">${l.custom_slug ? 'custom slug' : 'auto code'}</div>
+      </div>
+      <div class="d-url" title="${l.original_url}">${l.original_url}</div>
+      <div>
+        <div class="d-clicks">${l.click_count.toLocaleString()}</div>
+        <div class="d-bar"><div class="d-bar-fill" style="width:${Math.min(100,l.click_count/10)}%"></div></div>
+      </div>
+      <div>${badgeHtml(l.status)}</div>
+      <div style="font-size:11px;color:var(--text3)">${fmtDate(l.created_at)}</div>
+      <div style="display:flex;gap:4px">
+        <button class="d-act-btn" title="Copy" onclick="copyShort('${l.short_code}')">⎘</button>
+        <button class="d-act-btn" title="Analytics" onclick="location.href='/dashboard/analytics/${l.id}'">📊</button>
+        <button class="d-act-btn" title="QR Code" onclick="downloadQR('${l.id}','${l.short_code}')">⊞</button>
+        <button class="d-act-btn" title="Delete" onclick="deleteLink('${l.id}')" style="color:var(--red)">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function badgeHtml(status) {
+  const map = {active:'badge-active ● Active',expired:'badge-expired ✕ Expired',ab:'badge-ab ⇄ A/B',protected:'badge-protected 🔒 Protected',inactive:'badge-inactive ○ Inactive'};
+  const s = map[status] || 'badge-inactive ' + status;
+  const [cls,...rest] = s.split(' ');
+  return `<span class="badge ${cls}">${rest.join(' ')}</span>`;
+}
+
+function fmtDate(iso) {
+  const d = new Date(iso); return d.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+}
+
+function setFilter(f, btn) {
+  activeFilter = f;
+  document.querySelectorAll('.d-ftab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderLinks(allLinks);
+}
+
+function filterLinks(q) {
+  const filtered = allLinks.filter(l =>
+    l.short_code.includes(q) || l.original_url.includes(q) || (l.title||'').includes(q));
+  renderLinks(filtered);
+}
+
+async function copyShort(code) {
+  await navigator.clipboard.writeText(window.location.origin + '/' + code).catch(()=>{});
+  showToast('Copied!', 'success');
+}
+
+async function deleteLink(id) {
+  if (!confirm('Delete this link? This cannot be undone.')) return;
+  const r = await fetch('/api/links/' + id, {method:'DELETE'});
+  if (r.ok) { showToast('Link deleted', 'success'); loadLinks(); loadStats(); }
+  else showToast('Delete failed', 'error');
+}
+
+function downloadQR(id, code) {
+  const a = document.createElement('a');
+  a.href = '/api/links/' + id + '/qr?format=download';
+  a.download = 'qr-' + code + '.png';
+  a.click();
+}
+
+loadStats(); loadLinks();
+</script>
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}API Keys — Drizl{% endblock %}
+{% block body %}
+<div class="d-layout">
+  {% include "partials/sidebar.html" %}
+  <div class="d-main">
+    <div class="d-topbar">
+      <div class="d-topbar-title">API Keys</div>
+      <button class="btn btn-primary btn-sm" onclick="openCreateKey()">+ New key</button>
+    </div>
+    <div class="d-content">
+      <div class="card" style="margin-bottom:20px">
+        <div style="font-family:var(--font-display);font-size:15px;font-weight:700;margin-bottom:8px">Public REST API</div>
+        <p style="color:var(--text2);font-size:13px;margin-bottom:14px">Use your API key with the <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;font-family:var(--font-mono)">X-API-Key</code> header.</p>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px">
+          <div style="font-family:var(--font-mono);font-size:13px;color:var(--text2);line-height:1.7">
+            <div><span style="color:var(--green)">POST</span> <span style="color:var(--accent2)">/api/v1/shorten</span> — Shorten a URL</div>
+            <div><span style="color:var(--blue)">GET&nbsp;</span> <span style="color:var(--accent2)">/api/v1/links</span>&nbsp;&nbsp;&nbsp;— List your links</div>
+            <div><span style="color:var(--red)">DEL&nbsp;</span> <span style="color:var(--accent2)">/api/v1/links/:code</span> — Delete a link</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="keysContainer"><div style="padding:40px;text-align:center;color:var(--text3)"><div class="spinner" style="margin:0 auto"></div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Key Modal -->
+<div class="modal-backdrop" id="createKeyModal" style="display:none" onclick="if(event.target===this)closeCreateKey()">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Create API Key</div><button class="btn btn-ghost btn-sm" onclick="closeCreateKey()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Key name</label>
+        <input class="input" id="keyName" placeholder="e.g. Production, My App"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeCreateKey()">Cancel</button>
+      <button class="btn btn-primary" onclick="createKey()">Generate key →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Key Display Modal -->
+<div class="modal-backdrop" id="keyDisplayModal" style="display:none">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Save your API key</div></div>
+    <div class="modal-body">
+      <div style="background:var(--green-bg);border:1px solid var(--green-border);border-radius:8px;padding:12px;margin-bottom:14px;font-size:13px;color:var(--green)">⚠️ Copy this key now — it won't be shown again!</div>
+      <div id="newKeyDisplay" style="background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:12px;font-family:var(--font-mono);font-size:13px;word-break:break-all;color:var(--text)"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="copyNewKey()">Copy key</button>
+      <button class="btn btn-ghost" onclick="closeKeyDisplay()">Done</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+async function loadKeys() {
+  const r = await fetch('/api/apikeys'); if (!r.ok) return;
+  const d = await r.json();
+  const container = document.getElementById('keysContainer');
+  if (!d.keys.length) {
+    container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3)">No API keys yet. Create one to get started.</div>';
+    return;
+  }
+  container.innerHTML = '<div class="table-wrap">' + d.keys.map(k => `
+    <div class="table-row" style="display:flex;align-items:center;gap:16px;padding:14px 18px">
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:500;color:var(--text)">${k.name}</div>
+        <div class="mono" style="font-size:12px;color:var(--text3);margin-top:2px">${k.key_prefix}••••••••</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">Created ${new Date(k.created_at).toLocaleDateString()} ${k.last_used ? '· Last used ' + new Date(k.last_used).toLocaleDateString() : ''}</div>
+      </div>
+      <span class="badge ${k.is_active ? 'badge-active' : 'badge-expired'}">${k.is_active ? '● Active' : '✕ Revoked'}</span>
+      ${k.is_active ? `<button class="btn btn-danger btn-sm" onclick="revokeKey('${k.id}')">Revoke</button>` : ''}
+    </div>`).join('') + '</div>';
+}
+
+function openCreateKey()  { document.getElementById('createKeyModal').style.display='flex'; }
+function closeCreateKey() { document.getElementById('createKeyModal').style.display='none'; document.getElementById('keyName').value=''; }
+function closeKeyDisplay(){ document.getElementById('keyDisplayModal').style.display='none'; loadKeys(); }
+
+async function createKey() {
+  const name = document.getElementById('keyName').value.trim();
+  if (!name) return;
+  const r = await fetch('/api/apikeys', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name})});
+  const d = await r.json();
+  if (!r.ok) { showToast(d.error||'Failed','error'); return; }
+  closeCreateKey();
+  document.getElementById('newKeyDisplay').textContent = d.key;
+  document.getElementById('keyDisplayModal').style.display = 'flex';
+}
+
+async function copyNewKey() {
+  const key = document.getElementById('newKeyDisplay').textContent;
+  await navigator.clipboard.writeText(key).catch(()=>{});
+  showToast('Copied!', 'success');
+}
+
+async function revokeKey(id) {
+  if (!confirm('Revoke this API key?')) return;
+  const r = await fetch('/api/apikeys/'+id, {method:'DELETE'});
+  if (r.ok) { showToast('Key revoked','success'); loadKeys(); }
+  else showToast('Failed to revoke','error');
+}
+
+loadKeys();
+</script>
+{% endblock %}

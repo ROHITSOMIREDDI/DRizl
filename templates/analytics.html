@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}Analytics — {{ link.short_code }} — Drizl{% endblock %}
+{% block body %}
+<div class="d-layout">
+  {% include "partials/sidebar.html" %}
+  <div class="d-main">
+    <div class="d-topbar">
+      <div style="display:flex;align-items:center;gap:16px">
+        <a href="/dashboard" style="color:var(--text3);font-size:13px;text-decoration:none;display:flex;align-items:center;gap:5px">← Back</a>
+        <div>
+          <div class="mono" style="font-size:17px;font-weight:500;color:var(--accent2)">{{ link.short_code }}</div>
+          <div style="font-size:11px;color:var(--text3);max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ link.original_url }}</div>
+        </div>
+      </div>
+      <div class="range-tabs" id="rangeTabs">
+        <button class="range-tab" onclick="setRange('7d',this)">7d</button>
+        <button class="range-tab active" onclick="setRange('30d',this)">30d</button>
+        <button class="range-tab" onclick="setRange('90d',this)">90d</button>
+        <button class="range-tab" onclick="setRange('all',this)">All</button>
+      </div>
+    </div>
+    <div class="d-content" id="analyticsContent">
+      <div style="display:flex;align-items:center;justify-content:center;height:200px"><div class="spinner" style="width:32px;height:32px;border-width:3px"></div></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+const LINK_ID = '{{ link.id }}';
+let curRange = '30d';
+
+async function loadAnalytics() {
+  const r = await fetch('/api/analytics/' + LINK_ID + '?range=' + curRange);
+  if (!r.ok) return;
+  const d = await r.json();
+  render(d);
+}
+
+function setRange(range, btn) {
+  curRange = range;
+  document.querySelectorAll('.range-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadAnalytics();
+}
+
+function render(d) {
+  const s = d.summary;
+  const ab = d.ab_results;
+  const maxCountry = d.top_countries[0]?.count || 1;
+  const maxRef = d.top_referrers[0]?.count || 1;
+  const devTop = (d.device_split||[]).sort((a,b)=>b.count-a.count)[0];
+
+  document.getElementById('analyticsContent').innerHTML = `
+    <!-- STAT STRIP -->
+    <div class="stat-grid" style="margin-bottom:20px">
+      <div class="stat-card"><div class="stat-label">Total clicks</div><div class="stat-value" style="color:var(--accent2)">${(s.total_clicks||0).toLocaleString()}</div><div class="stat-sub">${curRange === 'all' ? 'all time' : 'last ' + curRange}</div></div>
+      <div class="stat-card"><div class="stat-label">Top country</div><div class="stat-value" style="font-size:20px">${s.top_country ? '🌍 ' + s.top_country : '—'}</div></div>
+      <div class="stat-card"><div class="stat-label">Top device</div><div class="stat-value" style="font-size:20px">${s.top_device === 'mobile' ? '📱' : s.top_device === 'desktop' ? '💻' : '—'} ${s.top_device || '—'}</div></div>
+      <div class="stat-card"><div class="stat-label">Status</div><div class="stat-value" style="font-size:14px;padding-top:6px">${badgeHtml('{{ link.status }}')}</div></div>
+    </div>
+
+    <!-- LINE CHART -->
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div style="font-family:var(--font-display);font-size:14px;font-weight:700">Clicks over time</div>
+        <div style="font-size:11px;color:var(--text3)">${curRange}</div>
+      </div>
+      ${renderLineChart(d.by_day)}
+    </div>
+
+    <!-- BOTTOM GRID -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px">
+      <div class="card">
+        <div style="font-family:var(--font-display);font-size:13px;font-weight:700;margin-bottom:14px">Top countries</div>
+        ${(d.top_countries||[]).slice(0,5).map(c=>`
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:9px">
+          <div class="mono" style="font-size:11px;color:var(--text2);width:32px">${c.country}</div>
+          <div style="flex:1;height:7px;background:var(--bg3);border-radius:4px;overflow:hidden"><div style="height:7px;border-radius:4px;background:linear-gradient(90deg,var(--accent),var(--accent2));width:${Math.round(c.count/maxCountry*100)}%"></div></div>
+          <div class="mono" style="font-size:11px;width:34px;color:var(--text3)">${c.count}</div>
+        </div>`).join('') || '<div style="color:var(--text3);font-size:13px">No data yet</div>'}
+      </div>
+      <div class="card">
+        <div style="font-family:var(--font-display);font-size:13px;font-weight:700;margin-bottom:14px">Device split</div>
+        ${renderDonut(d.device_split||[])}
+      </div>
+      <div class="card">
+        <div style="font-family:var(--font-display);font-size:13px;font-weight:700;margin-bottom:14px">Referrers</div>
+        ${(d.top_referrers||[]).slice(0,5).map(r=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 9px;background:var(--bg3);border-radius:7px;margin-bottom:6px">
+          <div style="font-size:11px;flex:1;color:var(--text)">${r.referrer}</div>
+          <div class="mono" style="font-size:11px;color:var(--accent2)">${r.count}</div>
+        </div>`).join('') || '<div style="color:var(--text3);font-size:13px">No data yet</div>'}
+      </div>
+    </div>
+
+    <!-- A/B RESULTS -->
+    ${ab ? `<div class="card">
+      <div style="font-family:var(--font-display);font-size:14px;font-weight:700;margin-bottom:4px">A/B Split results <span style="font-size:11px;color:var(--text3);font-weight:400">${ab.a_clicks + ab.b_clicks} total clicks</span></div>
+      <div style="margin-top:14px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <div style="font-size:11px;font-weight:600;background:var(--accent-light);color:var(--accent2);padding:2px 6px;border-radius:4px;width:22px;text-align:center">A</div>
+          <div style="flex:1;height:10px;background:var(--bg3);border-radius:5px;overflow:hidden"><div style="height:10px;background:linear-gradient(90deg,var(--accent),var(--accent2));width:${ab.a_pct}%"></div></div>
+          <div class="mono" style="font-size:11px;color:var(--text3)">${ab.a_clicks}</div>
+        </div>
+        <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-bottom:10px;padding-left:32px">→ ${ab.url_a}</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <div style="font-size:11px;font-weight:600;background:var(--teal-bg);color:var(--teal);padding:2px 6px;border-radius:4px;width:22px;text-align:center">B</div>
+          <div style="flex:1;height:10px;background:var(--bg3);border-radius:5px;overflow:hidden"><div style="height:10px;background:linear-gradient(90deg,var(--teal),var(--blue));width:${ab.b_pct}%"></div></div>
+          <div class="mono" style="font-size:11px;color:var(--text3)">${ab.b_clicks}</div>
+        </div>
+        <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);padding-left:32px">→ ${ab.url_b}</div>
+        <div style="margin-top:12px;padding:9px 12px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:8px;font-size:12px;color:var(--green)">
+          Variant ${ab.a_pct > ab.b_pct ? 'A' : 'B'} is leading by ${Math.abs(ab.a_pct - ab.b_pct)}%
+        </div>
+      </div>
+    </div>` : ''}
+  `;
+}
+
+function renderLineChart(byDay) {
+  if (!byDay || !byDay.length) return '<div style="height:100px;display:flex;align-items:center;justify-content:center;color:var(--text3)">No click data yet</div>';
+  const max = Math.max(...byDay.map(d=>d.count), 1);
+  const w = 900, h = 120;
+  const pts = byDay.map((d, i) => {
+    const x = (i / (byDay.length - 1)) * w;
+    const y = h - (d.count / max) * (h - 10);
+    return [x, y];
+  });
+  const path = pts.map((p,i) => (i===0?'M':'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+  const area = path + ' L' + pts[pts.length-1][0] + ',' + h + ' L0,' + h + ' Z';
+  const first = byDay[0]?.date?.slice(5) || '';
+  const last  = byDay[byDay.length-1]?.date?.slice(5) || '';
+  return `<svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent)" stop-opacity="0.3"/><stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
+    <path d="${area}" fill="url(#lg)"/>
+    <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>
+    <circle cx="${pts[pts.length-1][0]}" cy="${pts[pts.length-1][1]}" r="4" fill="var(--accent2)"/>
+    <text x="2" y="${h-2}" font-size="9" fill="var(--text3)" font-family="var(--font-mono)">${first}</text>
+    <text x="${w-2}" y="${h-2}" font-size="9" fill="var(--text3)" font-family="var(--font-mono)" text-anchor="end">${last}</text>
+  </svg>`;
+}
+
+function renderDonut(devices) {
+  if (!devices.length) return '<div style="color:var(--text3);font-size:13px">No data</div>';
+  const colors = {mobile:'var(--accent)',desktop:'var(--teal)',tablet:'var(--pink)'};
+  const total  = devices.reduce((s,d)=>s+d.count,0);
+  const r = 32, cx = 45, cy = 45, circ = 2*Math.PI*r;
+  let offset = -circ * 0.25;
+  let segs = '';
+  devices.forEach(d => {
+    const pct = d.count / total;
+    const dash = circ * pct;
+    const gap  = circ - dash;
+    segs += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${colors[d.device]||'var(--accent)'}" stroke-width="14" stroke-dasharray="${dash.toFixed(1)} ${gap.toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}"/>`;
+    offset -= dash;
+  });
+  const top = devices.sort((a,b)=>b.count-a.count)[0];
+  return `<div style="display:flex;align-items:center;gap:16px">
+    <svg width="90" height="90" viewBox="0 0 90 90" flex-shrink="0">
+      <circle cx="45" cy="45" r="32" fill="none" stroke="var(--bg3)" stroke-width="14"/>
+      ${segs}
+      <text x="45" y="42" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text)" font-family="var(--font-display)">${top.pct}%</text>
+      <text x="45" y="53" text-anchor="middle" font-size="8" fill="var(--text3)" font-family="var(--font-sans)">${top.device}</text>
+    </svg>
+    <div>${devices.map(d=>`<div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);margin-bottom:6px"><div style="width:8px;height:8px;border-radius:2px;background:${colors[d.device]||'var(--accent)'}"></div>${d.device}<div style="margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--text3);padding-left:10px">${d.pct}%</div></div>`).join('')}</div>
+  </div>`;
+}
+
+function badgeHtml(status) {
+  const map = {active:'badge-active ● Active',expired:'badge-expired ✕ Expired',ab:'badge-ab ⇄ A/B',protected:'badge-protected 🔒 Protected'};
+  const s = map[status] || 'badge-inactive '+status;
+  const [cls,...rest] = s.split(' ');
+  return `<span class="badge ${cls}">${rest.join(' ')}</span>`;
+}
+
+loadAnalytics();
+</script>
+{% endblock %}

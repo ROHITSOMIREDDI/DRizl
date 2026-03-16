@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Create account — Drizl{% endblock %}
+{% block body %}
+<div class="auth-page">
+  <a href="/" class="auth-logo">drizl.</a>
+  <div class="auth-card">
+    <h1 class="auth-title">Create your account</h1>
+    <p class="auth-sub">Free forever. No credit card needed.</p>
+    <div id="authError" class="form-error" style="display:none;margin-bottom:14px;padding:10px 14px;background:var(--red-bg);border:1px solid rgba(248,113,113,0.2);border-radius:8px"></div>
+    <div class="form-group">
+      <label class="form-label" for="email">Email</label>
+      <input class="input" id="email" type="email" placeholder="you@example.com" autocomplete="email"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="username">Username</label>
+      <input class="input" id="username" type="text" placeholder="yourname" autocomplete="username"/>
+      <div class="form-hint">3-20 characters, letters/numbers/underscores</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="password">Password</label>
+      <input class="input" id="password" type="password" placeholder="Min. 6 characters" autocomplete="new-password"/>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:4px" id="regBtn" onclick="doRegister()">
+      Create account →
+    </button>
+    <p style="text-align:center;margin-top:20px;font-size:13px;color:var(--text3)">
+      Already have an account? <a href="/login" style="color:var(--accent2)">Sign in</a>
+    </p>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+async function doRegister() {
+  const btn = document.getElementById('regBtn');
+  const email    = document.getElementById('email').value.trim();
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  if (!email || !username || !password) { showErr('All fields required'); return; }
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ email, username, password })
+    });
+    const data = await res.json();
+    if (!res.ok) { showErr(data.error || 'Registration failed'); return; }
+    window.location.href = '/dashboard';
+  } catch(e) { showErr('Network error. Please try again.'); }
+  finally { btn.disabled = false; btn.textContent = 'Create account →'; }
+}
+function showErr(msg) {
+  const el = document.getElementById('authError');
+  el.textContent = msg; el.style.display = 'block';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Enter') doRegister(); });
+</script>
+{% endblock %}

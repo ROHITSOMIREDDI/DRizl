@@ -1,0 +1,133 @@
+<!-- NEW LINK MODAL -->
+<div class="modal-backdrop" id="newLinkModal" style="display:none" onclick="if(event.target===this)closeNewLink()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Create new link</div>
+      <button class="btn btn-ghost btn-sm" onclick="closeNewLink()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="nlError" class="form-error" style="display:none;margin-bottom:12px;padding:10px;background:var(--red-bg);border:1px solid rgba(248,113,113,0.2);border-radius:8px"></div>
+      <div class="form-group">
+        <label class="form-label">Destination URL *</label>
+        <input class="input" id="nl-url" placeholder="https://example.com/very/long/url" type="url"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Custom slug <span style="color:var(--text3);font-weight:400">(optional)</span></label>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="color:var(--text3);font-size:13px;white-space:nowrap">drizl/</span>
+          <input class="input" id="nl-slug" placeholder="my-link" style="flex:1"/>
+        </div>
+        <div class="form-hint">Letters, numbers, hyphens, underscores</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Title <span style="color:var(--text3);font-weight:400">(optional)</span></label>
+        <input class="input" id="nl-title" placeholder="Launch link, Resume, etc."/>
+      </div>
+
+      <div class="toggle-row" style="border-top:none;padding-top:0">
+        <div><div class="toggle-label">🔀 A/B Split test</div><div class="toggle-sub">Route traffic to two different URLs</div></div>
+        <button class="toggle" id="nl-ab-toggle" onclick="toggleAB()"></button>
+      </div>
+      <div id="nl-ab-section" style="display:none;margin-bottom:12px">
+        <div class="form-group" style="margin-bottom:8px">
+          <label class="form-label">URL B</label>
+          <input class="input" id="nl-urlb" placeholder="https://example.com/alternate" type="url"/>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Split ratio (% to A)</label>
+          <input class="input" id="nl-split" type="number" value="50" min="10" max="90"/>
+        </div>
+      </div>
+
+      <div class="toggle-row">
+        <div><div class="toggle-label">🔒 Password protect</div><div class="toggle-sub">Require a password to access</div></div>
+        <button class="toggle" id="nl-pw-toggle" onclick="togglePW()"></button>
+      </div>
+      <div id="nl-pw-section" style="display:none;margin-bottom:12px">
+        <input class="input" id="nl-pw" placeholder="Enter link password" type="password"/>
+      </div>
+
+      <div class="toggle-row">
+        <div><div class="toggle-label">⏱ Set expiry</div><div class="toggle-sub">Expire by date or click count</div></div>
+        <button class="toggle" id="nl-exp-toggle" onclick="toggleExp()"></button>
+      </div>
+      <div id="nl-exp-section" style="display:none;margin-bottom:12px;display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Expiry date</label>
+            <input class="input" id="nl-date" type="datetime-local"/>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Max clicks</label>
+            <input class="input" id="nl-maxclicks" type="number" placeholder="e.g. 1000"/>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeNewLink()">Cancel</button>
+      <button class="btn btn-primary" id="nl-submit" onclick="createLink()">Create link →</button>
+    </div>
+  </div>
+</div>
+<script>
+let abOn = false, pwOn = false, expOn = false;
+
+function openNewLink() { document.getElementById('newLinkModal').style.display='flex'; }
+function closeNewLink() {
+  document.getElementById('newLinkModal').style.display='none';
+  document.getElementById('nl-url').value='';
+  document.getElementById('nl-slug').value='';
+  document.getElementById('nl-title').value='';
+  document.getElementById('nlError').style.display='none';
+  if (abOn) toggleAB(); if (pwOn) togglePW(); if (expOn) toggleExp();
+}
+
+function toggleAB() {
+  abOn = !abOn;
+  document.getElementById('nl-ab-toggle').classList.toggle('on', abOn);
+  document.getElementById('nl-ab-section').style.display = abOn ? 'block' : 'none';
+}
+function togglePW() {
+  pwOn = !pwOn;
+  document.getElementById('nl-pw-toggle').classList.toggle('on', pwOn);
+  document.getElementById('nl-pw-section').style.display = pwOn ? 'block' : 'none';
+}
+function toggleExp() {
+  expOn = !expOn;
+  document.getElementById('nl-exp-toggle').classList.toggle('on', expOn);
+  document.getElementById('nl-exp-section').style.display = expOn ? 'block' : 'none';
+}
+
+async function createLink() {
+  const btn = document.getElementById('nl-submit');
+  const url = document.getElementById('nl-url').value.trim();
+  if (!url) { showNLErr('Destination URL is required'); return; }
+  const body = {
+    original_url: url,
+    custom_slug: document.getElementById('nl-slug').value.trim() || undefined,
+    title: document.getElementById('nl-title').value.trim() || undefined,
+    is_ab_test: abOn,
+    url_b: abOn ? document.getElementById('nl-urlb').value.trim() : undefined,
+    split_ratio: abOn ? parseInt(document.getElementById('nl-split').value) : 50,
+    password: pwOn ? document.getElementById('nl-pw').value : undefined,
+    expires_at: expOn && document.getElementById('nl-date').value ? document.getElementById('nl-date').value : undefined,
+    max_clicks: expOn && document.getElementById('nl-maxclicks').value ? parseInt(document.getElementById('nl-maxclicks').value) : undefined,
+  };
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    const r = await fetch('/api/links', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+    const d = await r.json();
+    if (!r.ok) { showNLErr(d.error || 'Failed to create link'); return; }
+    showToast('Link created! ' + (d.short_url || ''), 'success');
+    closeNewLink();
+    if (typeof loadLinks === 'function') { loadLinks(); loadStats(); }
+  } catch(e) { showNLErr('Network error'); }
+  finally { btn.disabled = false; btn.textContent = 'Create link →'; }
+}
+
+function showNLErr(msg) {
+  const el = document.getElementById('nlError');
+  el.textContent = msg; el.style.display = 'block';
+}
+</script>
