@@ -48,6 +48,15 @@
       </div>
 
       <div class="toggle-row">
+        <div><div class="toggle-label">🌍 Geo & Device Targeting</div><div class="toggle-sub">Route based on country or device</div></div>
+        <button class="toggle" id="nl-geo-toggle" onclick="toggleGeo()"></button>
+      </div>
+      <div id="nl-geo-section" style="display:none;margin-bottom:12px">
+        <div id="geoRulesList"></div>
+        <button class="btn btn-ghost btn-sm" onclick="addGeoRule()" style="width:100%">+ Add targeting rule</button>
+      </div>
+
+      <div class="toggle-row">
         <div><div class="toggle-label">⏱ Set expiry</div><div class="toggle-sub">Expire by date or click count</div></div>
         <button class="toggle" id="nl-exp-toggle" onclick="toggleExp()"></button>
       </div>
@@ -71,7 +80,7 @@
   </div>
 </div>
 <script>
-let abOn = false, pwOn = false, expOn = false;
+let abOn = false, pwOn = false, expOn = false, geoOn = false, geoRules = [];
 
 function openNewLink() { document.getElementById('newLinkModal').style.display='flex'; }
 function closeNewLink() {
@@ -80,7 +89,42 @@ function closeNewLink() {
   document.getElementById('nl-slug').value='';
   document.getElementById('nl-title').value='';
   document.getElementById('nlError').style.display='none';
-  if (abOn) toggleAB(); if (pwOn) togglePW(); if (expOn) toggleExp();
+  if (abOn) toggleAB(); if (pwOn) togglePW(); if (expOn) toggleExp(); if (geoOn) toggleGeo();
+  geoRules = []; renderGeoRules();
+}
+
+function toggleGeo() {
+  geoOn = !geoOn;
+  document.getElementById('nl-geo-toggle').classList.toggle('on', geoOn);
+  document.getElementById('nl-geo-section').style.display = geoOn ? 'block' : 'none';
+  if (geoOn && geoRules.length === 0) addGeoRule();
+}
+
+function addGeoRule() {
+  geoRules.push({type:'country', value:'', url:''});
+  renderGeoRules();
+}
+
+function removeGeoRule(i) {
+  geoRules.splice(i, 1);
+  renderGeoRules();
+}
+
+function renderGeoRules() {
+  const container = document.getElementById('geoRulesList');
+  container.innerHTML = geoRules.map((r, i) => `
+    <div style="background:rgba(255,255,255,0.03);padding:10px;border-radius:8px;margin-bottom:10px;border:1px solid rgba(255,255,255,0.05)">
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <select class="input" style="flex:0.4" onchange="geoRules[${i}].type=this.value">
+          <option value="country" ${r.type==='country'?'selected':''}>Country</option>
+          <option value="device" ${r.type==='device'?'selected':''}>Device</option>
+        </select>
+        <input class="input" style="flex:1" placeholder="${r.type==='country'?'US, IN, etc.':'mobile/desktop'}" value="${r.value}" oninput="geoRules[${i}].value=this.value.trim().toUpperCase()"/>
+        <button class="btn btn-ghost btn-sm" onclick="removeGeoRule(${i})" style="color:var(--red)">✕</button>
+      </div>
+      <input class="input" placeholder="Redirect to URL" value="${r.url}" oninput="geoRules[${i}].url=this.value.trim()"/>
+    </div>
+  `).join('');
 }
 
 function toggleAB() {
@@ -113,6 +157,8 @@ async function createLink() {
     password: pwOn ? document.getElementById('nl-pw').value : undefined,
     expires_at: expOn && document.getElementById('nl-date').value ? document.getElementById('nl-date').value : undefined,
     max_clicks: expOn && document.getElementById('nl-maxclicks').value ? parseInt(document.getElementById('nl-maxclicks').value) : undefined,
+    geo_rules: geoOn ? geoRules.filter(r => r.type==='country' && r.value && r.url).map(r => ({country: r.value, url: r.url})) : undefined,
+    device_rules: geoOn ? geoRules.filter(r => r.type==='device' && r.value && r.url).map(r => ({device: r.value, url: r.url})) : undefined,
   };
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
   try {

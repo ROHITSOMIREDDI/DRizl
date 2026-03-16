@@ -76,7 +76,7 @@ function renderLinks(links) {
     <div class="table-row d-trow" style="display:grid;grid-template-columns:2fr 3fr 70px 80px 80px 90px;padding:12px 14px;align-items:center">
       <div>
         <div class="d-code mono">${l.short_code}</div>
-        <div class="d-code-sub mono">${l.custom_slug ? 'custom slug' : 'auto code'}</div>
+        <div class="d-code-sub mono">${l.title || (l.custom_slug ? 'custom slug' : 'auto code')}</div>
       </div>
       <div class="d-url" title="${l.original_url}">${l.original_url}</div>
       <div>

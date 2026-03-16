@@ -553,8 +553,8 @@ def api_analytics_link(link_id):
     cnt = {}
     for c in clicks:
         if c.country: cnt[c.country] = cnt.get(c.country, 0) + 1
-    top_countries = sorted(cnt.items(), key=lambda x: x[1], reverse=True)[:10]
-    top_countries = [{'country': k, 'count': v} for k, v in top_countries]
+    sorted_countries = sorted(cnt.items(), key=lambda x: x[1], reverse=True)[:10]
+    top_countries = [{'country': k, 'count': v} for k, v in sorted_countries]
 
     # Devices
     dev = {}
@@ -568,8 +568,8 @@ def api_analytics_link(link_id):
     br = {}
     for c in clicks:
         b = c.browser or 'Unknown'; br[b] = br.get(b, 0) + 1
-    browser_split = sorted(br.items(), key=lambda x: x[1], reverse=True)[:6]
-    browser_split = [{'browser': k, 'count': v} for k, v in browser_split]
+    sorted_browsers = sorted(br.items(), key=lambda x: x[1], reverse=True)[:6]
+    browser_split = [{'browser': k, 'count': v} for k, v in sorted_browsers]
 
     # Referrers
     ref = {}
@@ -579,8 +579,8 @@ def api_analytics_link(link_id):
             try: r = urlparse(c.referrer).netloc.replace('www.', '') or 'Direct'
             except: pass
         ref[r] = ref.get(r, 0) + 1
-    top_referrers = sorted(ref.items(), key=lambda x: x[1], reverse=True)[:8]
-    top_referrers = [{'referrer': k, 'count': v} for k, v in top_referrers]
+    sorted_referrers = sorted(ref.items(), key=lambda x: x[1], reverse=True)[:8]
+    top_referrers = [{'referrer': k, 'count': v} for k, v in sorted_referrers]
 
     # A/B
     ab = None
