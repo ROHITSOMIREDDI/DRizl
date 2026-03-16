@@ -1,52 +1,86 @@
-# Drizl — Premium URL Shortener & Bio Page Builder
+# 🌧️ Drizl — Premium URL Shortener & Analytics
 
-Drizl is a full-stack URL shortening platform built with Flask, featuring advanced analytics, A/B testing, geo-targeting, and customizable bio pages.
+Drizl is a full-stack, high-performance URL shortening platform designed for both speed and aesthetics. It empowers users to create shortened links with advanced targeting rules, real-time analytics, and personalized bio pages.
 
-## ✨ Features
+---
 
-- **High-Speed Redirects**: Optimized with Redis caching for sub-100ms response times.
-- **Advanced Targeting**: Route users based on their country, device (mobile/desktop), or platform.
-- **A/B Visualizer**: Multi-variant URL testing with real-time leading variant tracking.
-- **Rich Analytics**: Deep dive into click patterns with SVG-rendered time series, country breakdowns, and device distribution.
-- **Social Bio Pages**: Create beautiful, personalized landing pages for your social profile links.
-- **Security First**: Password-protected links, click-expiring links, and date-based TTL.
-- **Developer API**: RESTful API v1 for programmatic link management with secure API keys.
-- **QR Codes**: On-demand high-quality QR code generation for every link.
+## 🚀 Vision
 
-## 🛠 Tech Stack
+**Drizl** isn't just another URL shortener; it's a complete link-management suite. Whether you're a marketer tracking campaigns or a developer building with our REST API, Drizl provides the tools you need in a sleek, premium interface.
 
-- **Backend**: Python 3.13, Flask 3.0.3, SQLAlchemy 2.0.48
-- **Frontend**: HTML5, Jinja2, Vanilla CSS (Premium Dark Mode design)
-- **Database**: PostgreSQL (Production) / SQLite (Local)
-- **Caching**: Redis
-- **Analytics**: GeoIP2, User-Agents
-- **Security**: Bcrypt, JWT authentication, Flask-Limiter
+## ✨ Key Features
 
-## 🚀 Local Setup
+### 🔗 Link Management
+- **Custom Slugs**: Brand your links with custom text.
+- **QR Code Generation**: Instantly generate high-quality QR codes for every short link.
+- **Password Protection**: Secure your links with end-to-end password gates.
+- **Link Expiry**: Set TTL (Time to Live) based on dates or total click counts.
 
-1. **Prerequisites**:
-   - Python 3.13+ installed.
-   - (Optional) Redis server running locally.
+### 🎯 Advanced Targeting
+- **Geo-Targeting**: Redirect users based on their country (powered by GeoIP2).
+- **Device Targeting**: Route traffic differently for Mobile, Desktop, or Tablet users.
+- **A/B Testing**: Randomly split traffic between two variants and track the winner in real-time.
 
-2. **Quick Start**:
-   Double-click `setup.bat` or run:
+### 📊 Deep Analytics
+- **Live Visualizations**: Beautiful SVG-rendered charts for daily click trends.
+- **Demographics**: Breakdown by Top Countries, Browser types, and Device platforms.
+- **Referrer Tracking**: See exactly where your traffic is coming from.
+
+### 📱 Social Bio Pages
+- **Custom Bio Sections**: Create a personalized "Link-in-bio" page with custom icons and featured links.
+- **Visual Editor**: Real-time management of your public profile.
+
+### 🛠 Developer API (v1)
+- **Rest API**: Programmatically shorten, list, and delete links.
+- **Secure Keys**: Manage multiple API keys with granular revocation.
+
+---
+
+## 💻 Tech Stack
+
+- **Backend**: Python 3.13, Flask (Unified Full-Stack)
+- **Database**: SQLAlchemy (PostgreSQL/SQLite)
+- **Caching**: Redis (High-speed redirect fallbacks)
+- **Styling**: Vanilla CSS (Custom Design System with Premium Dark Mode)
+- **Security**: Bcrypt Hashing, JWT Session Management, Rate Limiting
+
+---
+
+## 🛠 Installation & Local Setup
+
+Drizl is designed to be easy to get running.
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/ROHITSOMIREDDI/DRizl.git
+   cd DRizl
+   ```
+
+2. **Run the setup script**:
+   We've included a `setup.bat` for Windows users to automate the virtual environment and dependency installation.
+   ```bash
+   setup.bat
+   ```
+
+3. **Manual Setup** (if not on Windows):
    ```bash
    python -m venv venv
-   call venv\Scripts\activate.bat
+   source venv/bin/activate
    pip install -r requirements.txt
    python -c "from app import db, app; app.app_context().push(); db.create_all()"
    ```
 
-3. **Run the App**:
+4. **Launch the platform**:
    ```bash
    python app.py
    ```
-   Open `http://localhost:5000` in your browser.
-
-## 📝 Credits
-
-Developed by **Rohit Somireddi** as a Full Stack Development project.
-Built for performance, scalability, and premium aesthetics.
+   *Platform will be live at `http://127.0.0.1:5000`*
 
 ---
+
+## 👤 Credits
+
+Developed with ❤️ by **Rohit Somireddi** as a Full Stack Development Project.
+Built for performance, scalability, and premium aesthetics.
+
 © 2026 Drizl. All Rights Reserved.

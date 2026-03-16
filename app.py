@@ -43,26 +43,30 @@ db.init_app(app)
 migrate = Migrate(app, db)
 CORS(app, resources={r"/api/*": {"origins": app.config.get('FRONTEND_URL', '*')}})
 
+# ── Redis client (Check availability first) ───────────────────────
+REDIS_URL = app.config.get('REDIS_URL')
+REDIS_OK = False
+_redis = None
+
+if REDIS_URL:
+    try:
+        _redis = redis_lib.from_url(REDIS_URL, decode_responses=True, socket_connect_timeout=1)
+        _redis.ping()
+        REDIS_OK = True
+    except Exception:
+        print("WARNING: Redis unavailable - using DB-only mode (slower redirects)")
+else:
+    print("INFO: No REDIS_URL found - using DB-only mode")
+
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
     default_limits=["200 per minute"],
-    storage_uri=app.config.get('REDIS_URL', 'memory://'),
+    storage_uri=app.config.get('REDIS_URL') if REDIS_OK else "memory://",
 )
 
 login_manager = LoginManager(app)
 login_manager.login_view = 'login_page'
-
-# ── Redis client ──────────────────────────────────────────────────
-try:
-    _redis = redis_lib.from_url(app.config.get('REDIS_URL', 'redis://localhost:6379'),
-                                 decode_responses=True, socket_connect_timeout=2)
-    _redis.ping()
-    REDIS_OK = True
-except Exception:
-    _redis = None
-    REDIS_OK = False
-    print("⚠️  Redis unavailable — using DB-only mode (slower redirects)")
 
 LINK_TTL = app.config.get('LINK_CACHE_TTL', 3600)
 
