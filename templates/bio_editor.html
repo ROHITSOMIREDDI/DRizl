@@ -6,37 +6,51 @@
   <div class="d-main">
     <div class="d-topbar">
       <div class="d-topbar-title">Bio Page</div>
-      <div style="display:flex;gap:10px">
+      <div style="display:flex;gap:12px;align-items:center">
+        <div class="theme-switch" onclick="toggleTheme()" title="Toggle Light/Dark Mode">
+          <div class="theme-switch-thumb">
+            <svg class="sun-icon-thumb" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="display:none">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l.707.707M6.343 6.343l.707.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
+            </svg>
+            <svg class="moon-icon-thumb" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+          </div>
+          <div class="theme-switch-icons">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l.707.707M6.343 6.343l.707.707M12 8a4 4 0 100 8 4 4 0 000-8z" /></svg>
+          </div>
+        </div>
         <button class="btn btn-ghost btn-sm" id="previewBtn" onclick="openPreview()" style="display:none">👁 Preview</button>
-        <button class="btn btn-primary btn-sm" onclick="saveBio()">Save changes</button>
+        <button class="btn btn-secondary btn-sm" id="editModeBtn" onclick="toggleEditMode()">Edit Profile</button>
+        <button class="btn btn-primary btn-sm" id="saveBtn" onclick="saveBio()" style="display:none">Save Changes</button>
       </div>
     </div>
     <div class="d-content" style="max-width:700px">
       <div id="bioError" style="display:none;padding:10px 14px;background:var(--red-bg);border:1px solid rgba(248,113,113,0.2);border-radius:8px;color:var(--red);font-size:13px;margin-bottom:16px"></div>
 
-      <!-- PROFILE -->
-      <div class="card" style="margin-bottom:16px">
-        <div style="font-family:var(--font-display);font-size:15px;font-weight:700;margin-bottom:16px">Profile</div>
+      <div class="card" style="margin-bottom:16px" id="profileCard">
+        <div style="font-family:var(--font-display);font-size:15px;font-weight:700;margin-bottom:16px">Profile Information</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
           <div class="form-group" style="margin-bottom:0">
             <label class="form-label">Username *</label>
             <div style="display:flex;align-items:center;gap:6px">
-              <span style="color:var(--text3);font-size:13px">/b/</span>
-              <input class="input" id="bio-username" placeholder="yourname" style="flex:1"/>
+              <span style="color:var(--text3);font-size:13px">@</span>
+              <input class="input" id="bio-username" placeholder="yourname" style="flex:1" readonly />
             </div>
           </div>
           <div class="form-group" style="margin-bottom:0">
             <label class="form-label">Display name *</label>
-            <input class="input" id="bio-displayname" placeholder="Your Name"/>
+            <input class="input" id="bio-displayname" placeholder="Your Name" readonly />
           </div>
         </div>
         <div class="form-group" style="margin-top:14px;margin-bottom:0">
           <label class="form-label">Bio</label>
-          <textarea class="input" id="bio-bio" rows="2" placeholder="A short bio about yourself..." style="resize:vertical"></textarea>
+          <textarea class="input" id="bio-bio" rows="2" placeholder="A short bio about yourself..." style="resize:vertical" readonly></textarea>
         </div>
         <div class="form-group" style="margin-top:14px;margin-bottom:0">
           <label class="form-label">Tags <span style="color:var(--text3);font-weight:400">(comma separated)</span></label>
-          <input class="input" id="bio-tags" placeholder="Next.js, Node.js, PostgreSQL"/>
+          <input class="input" id="bio-tags" placeholder="Next.js, Node.js, PostgreSQL" readonly />
         </div>
       </div>
 
@@ -54,7 +68,28 @@
 {% endblock %}
 {% block extra_scripts %}
 <script>
-let bioLinks = [];
+let bioLinks = [], isEditMode = false;
+
+function toggleEditMode() {
+  isEditMode = !isEditMode;
+  const btn = document.getElementById('editModeBtn');
+  const saveBtn = document.getElementById('saveBtn');
+  const inputs = document.querySelectorAll('#profileCard .input');
+  
+  if (isEditMode) {
+    btn.textContent = 'Cancel Edit';
+    btn.className = 'btn btn-ghost btn-sm';
+    saveBtn.style.display = 'inline-flex';
+    inputs.forEach(i => i.removeAttribute('readonly'));
+  } else {
+    btn.textContent = 'Edit Profile';
+    btn.className = 'btn btn-secondary btn-sm';
+    saveBtn.style.display = 'none';
+    inputs.forEach(i => i.setAttribute('readonly', true));
+    loadBio(); // Revert changes
+  }
+  renderLinks();
+}
 
 async function loadBio() {
   const r = await fetch('/api/bio'); if (!r.ok) return;
@@ -79,27 +114,30 @@ function renderLinks() {
   list.innerHTML = bioLinks.map((l, i) => `
     <div style="display:flex;align-items:flex-start;gap:10px;padding:12px;background:var(--bg3);border-radius:10px;margin-bottom:10px;border:1px solid var(--border)">
       <div style="flex:1;display:grid;grid-template-columns:1fr 2fr auto;gap:8px;align-items:center">
-        <input class="input" value="${l.icon||'🔗'}" oninput="bioLinks[${i}].icon=this.value" placeholder="Icon" style="font-size:16px;text-align:center" />
-        <input class="input" value="${l.title||''}" oninput="bioLinks[${i}].title=this.value" placeholder="Title" />
-        <input class="input" value="${l.url||''}" oninput="bioLinks[${i}].url=this.value" placeholder="https://..." style="grid-column:2/4"/>
-        <textarea class="input" rows="1" oninput="bioLinks[${i}].desc=this.value" placeholder="Short description (optional)" style="grid-column:1/4;resize:none">${l.desc||''}</textarea>
+        <input class="input" value="${l.icon||'🔗'}" oninput="bioLinks[${i}].icon=this.value" placeholder="Icon" style="font-size:16px;text-align:center" ${isEditMode ? '' : 'readonly'} />
+        <input class="input" value="${l.title||''}" oninput="bioLinks[${i}].title=this.value" placeholder="Title" ${isEditMode ? '' : 'readonly'} />
+        <input class="input" value="${l.url||''}" oninput="bioLinks[${i}].url=this.value" placeholder="https://..." style="grid-column:2/4" ${isEditMode ? '' : 'readonly'} />
+        <textarea class="input" rows="1" oninput="bioLinks[${i}].desc=this.value" placeholder="Short description (optional)" style="grid-column:1/4;resize:none" ${isEditMode ? '' : 'readonly'}>${l.desc||''}</textarea>
       </div>
+      ${isEditMode ? `
       <div style="display:flex;flex-direction:column;gap:6px">
         <button class="btn btn-ghost btn-sm" onclick="removeLink(${i})" style="color:var(--red)">✕</button>
         ${i > 0 ? `<button class="btn btn-ghost btn-sm" onclick="moveLink(${i},-1)">↑</button>` : ''}
         ${i < bioLinks.length-1 ? `<button class="btn btn-ghost btn-sm" onclick="moveLink(${i},1)">↓</button>` : ''}
-      </div>
+      </div>` : ''}
     </div>`).join('');
 }
 
 function addLink() {
+  if (!isEditMode) return;
   bioLinks.push({title:'', url:'', icon:'🔗', desc:''});
   renderLinks();
 }
 
-function removeLink(i) { bioLinks.splice(i,1); renderLinks(); }
+function removeLink(i) { if (!isEditMode) return; bioLinks.splice(i,1); renderLinks(); }
 
 function moveLink(i, dir) {
+  if (!isEditMode) return;
   const j = i + dir;
   if (j < 0 || j >= bioLinks.length) return;
   [bioLinks[i], bioLinks[j]] = [bioLinks[j], bioLinks[i]];
@@ -116,6 +154,7 @@ async function saveBio() {
   const d = await r.json();
   if (!r.ok) { showBioErr(d.error||'Save failed'); return; }
   showToast('Bio page saved!', 'success');
+  toggleEditMode(); // Exit edit mode after save
   document.getElementById('previewBtn').style.display = 'inline-flex';
 }
 

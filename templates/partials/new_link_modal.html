@@ -165,9 +165,10 @@ async function createLink() {
     const r = await fetch('/api/links', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
     const d = await r.json();
     if (!r.ok) { showNLErr(d.error || 'Failed to create link'); return; }
-    showToast('Link created! ' + (d.short_url || ''), 'success');
+    showToast('Link created!', 'success');
     closeNewLink();
-    if (typeof loadLinks === 'function') { loadLinks(); loadStats(); }
+    if (typeof loadLinks === 'function') { await loadLinks(); await loadStats(); }
+    if (d.link) openLinkDetail(d.link);
   } catch(e) { showNLErr('Network error'); }
   finally { btn.disabled = false; btn.textContent = 'Create link →'; }
 }

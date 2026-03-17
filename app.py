@@ -228,6 +228,10 @@ def apikeys_page():
 def settings_page():
     return render_template('settings.html', user=current_user)
 
+@app.route('/about')
+def about_page():
+    return render_template('about_developer.html')
+
 # ── Public bio page ───────────────────────────────────────────────
 @app.route('/b/<username>')
 def public_bio(username):
@@ -238,7 +242,7 @@ def public_bio(username):
 # REDIRECT ENGINE  /:code
 # ════════════════════════════════════════════════════════════════
 RESERVED = {'api', 'login', 'register', 'dashboard', 'static', 'health',
-            'b', 'admin', 'robots.txt', 'favicon.ico'}
+            'b', 'admin', 'robots.txt', 'favicon.ico', 'about'}
 
 @app.route('/<code>', methods=['GET', 'POST'])
 def redirect_link(code):

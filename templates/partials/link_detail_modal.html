@@ -93,14 +93,19 @@ function downloadQRFromDetail() {
 }
 
 async function deleteFromDetail() {
-  if (!confirm('Delete this link? This cannot be undone.')) return;
+  // Simplified for better reliability and responsiveness
   const r = await fetch('/api/links/' + currentDetailId, {method:'DELETE'});
+  console.log('Delete response:', r.status);
+  
   if (r.ok) { 
-    showToast('Link deleted', 'success'); 
+    showToast('Link deleted successfully', 'success'); 
     closeLinkDetail();
-    if (typeof loadLinks === 'function') loadLinks(); 
-    if (typeof loadStats === 'function') loadStats(); 
+    if (window.loadLinks) loadLinks(); 
+    if (window.loadStats) loadStats(); 
   }
-  else showToast('Delete failed', 'error');
+  else {
+    const d = await r.json().catch(() => ({}));
+    showToast(d.error || 'Delete failed', 'error');
+  }
 }
 </script>
