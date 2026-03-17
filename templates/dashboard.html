@@ -34,7 +34,6 @@
         
         <div class="d-hero-tagline">Drop the long. Share the short.</div>
       </div>
-
       <!-- STAT CARDS -->
       <div class="stat-grid" id="statGrid">
         <div class="stat-card"><div class="stat-label">Total links</div><div class="stat-value" id="s-links">—</div><div class="stat-sub"><span class="stat-delta delta-up" id="s-links-d"></span></div></div>
@@ -166,23 +165,18 @@ function downloadQR(id, code) {
   a.click();
 }
 
+loadStats(); loadLinks();
+
 function doHeroShorten() {
   const url = document.getElementById('heroUrlInput').value.trim();
   if (!url) return;
   openNewLink();
   setTimeout(() => {
-    const modalInput = document.getElementById('nl-url');
+    const modalInput = document.getElementById('longUrl');
     if (modalInput) {
       modalInput.value = url;
-      modalInput.focus();
     }
   }, 100);
 }
-
-document.getElementById('heroUrlInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') doHeroShorten();
-});
-
-loadStats(); loadLinks();
 </script>
 {% endblock %}

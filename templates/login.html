@@ -8,8 +8,8 @@
     <p class="auth-sub">Sign in to your Drizl account</p>
     <div id="authError" class="form-error" style="display:none;margin-bottom:14px;padding:10px 14px;background:var(--red-bg);border:1px solid rgba(248,113,113,0.2);border-radius:8px"></div>
     <div class="form-group">
-      <label class="form-label" for="credential">Username or Email</label>
-      <input class="input" id="credential" type="text" placeholder="you@example.com or username" autocomplete="username" />
+      <label class="form-label" for="email">Email</label>
+      <input class="input" id="email" type="email" placeholder="you@example.com" autocomplete="email" />
     </div>
     <div class="form-group">
       <label class="form-label" for="password">Password</label>
@@ -29,14 +29,14 @@
 async function doLogin() {
   const btn = document.getElementById('loginBtn');
   const errEl = document.getElementById('authError');
-  const credential = document.getElementById('credential').value.trim();
+  const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value;
-  if (!credential || !password) { showErr('Please fill in all fields'); return; }
+  if (!email || !password) { showErr('Please fill in all fields'); return; }
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
   try {
     const res = await fetch('/api/auth/login', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ credential, password })
+      body: JSON.stringify({ email, password })
     });
     const data = await res.json();
     if (!res.ok) { showErr(data.error || 'Login failed'); return; }

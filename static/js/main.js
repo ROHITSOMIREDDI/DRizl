@@ -2,7 +2,7 @@
 function showToast(msg, type = 'success') {
   const existing = document.querySelector('.toast');
   if (existing) existing.remove();
-  
+
   const el = document.createElement('div');
   el.className = `toast toast-${type}`;
   el.innerHTML = `
@@ -28,18 +28,30 @@ window.addEventListener('scroll', () => {
 });
 
 // Theme Management
+function setFavicon(theme) {
+  const icon = theme === 'light' ? 'light mode_icon.ico' : 'dark mode_icon.ico';
+  const link = document.getElementById('favicon');
+  if (link) {
+    link.href = `/static/images/${icon}`;
+  }
+}
+
 function initTheme() {
-  const saved = localStorage.getItem('drizl-theme') || 'dark';
-  document.documentElement.setAttribute('data-theme', saved);
+  const savedStatus = localStorage.getItem('drizl-theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', savedStatus);
+  setFavicon(savedStatus);
 }
 
 function toggleTheme() {
-  const current = document.documentElement.getAttribute('data-theme');
-  const next = current === 'dark' ? 'light' : 'dark';
+  const curr = document.documentElement.getAttribute('data-theme');
+  const next = curr === 'dark' ? 'light' : 'dark';
+  
   document.documentElement.setAttribute('data-theme', next);
   localStorage.setItem('drizl-theme', next);
-  showToast(`${next.charAt(0).toUpperCase() + next.slice(1)} mode enabled`, 'success');
+  setFavicon(next);
+  
+  showToast(`Switched to ${next} mode`, 'success');
 }
 
-// Ensure theme is initialized on script load
-initTheme();
+// Initial Run
+document.addEventListener('DOMContentLoaded', initTheme);

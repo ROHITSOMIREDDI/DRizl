@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="{% block meta_desc %}Drizl — Shorten, track, and control your links. Analytics, A/B testing, QR codes and more.{% endblock %}" />
   <title>{% block title %}Drizl — Drop the long. Share the short.{% endblock %}</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='28'>🔗</text></svg>" />
+  <link rel="icon" id="favicon" type="image/x-icon" href="{{ url_for('static', filename='images/dark mode_icon.ico') }}" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -14,6 +14,10 @@
     (function() {
       const saved = localStorage.getItem('drizl-theme') || 'dark';
       document.documentElement.setAttribute('data-theme', saved);
+      // Set favicon immediately
+      const icon = saved === 'light' ? 'light mode_icon.ico' : 'dark mode_icon.ico';
+      const link = document.getElementById('favicon');
+      if (link) link.href = `/static/images/${icon}`;
     })();
   </script>
   {% block extra_head %}{% endblock %}

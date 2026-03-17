@@ -14,9 +14,8 @@
       <div class="d-avatar">{{ current_user.username[0].upper() if current_user else 'D' }}</div>
       <div>
         <div class="d-uname">{{ current_user.username if current_user else 'User' }}</div>
-        <div class="d-uplan">Free Plan · By <b>Rohit Somireddi</b></div>
+        <div class="d-uplan">Free plan</div>
       </div>
-      <a href="/logout" class="d-act-btn" style="margin-left:auto" title="Logout">↩</a>
     </div>
     <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:10px" onclick="doLogout()">Sign out</button>
   </div>

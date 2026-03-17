@@ -1,5 +1,5 @@
 import os, re, json, random, secrets, string, io
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from functools import wraps
 from urllib.parse import urlparse
 
@@ -43,30 +43,36 @@ db.init_app(app)
 migrate = Migrate(app, db)
 CORS(app, resources={r"/api/*": {"origins": app.config.get('FRONTEND_URL', '*')}})
 
-# ── Redis client (Check availability first) ───────────────────────
-REDIS_URL = app.config.get('REDIS_URL')
-REDIS_OK = False
-_redis = None
-
-if REDIS_URL:
-    try:
-        _redis = redis_lib.from_url(REDIS_URL, decode_responses=True, socket_connect_timeout=1)
-        _redis.ping()
-        REDIS_OK = True
-    except Exception:
-        print("WARNING: Redis unavailable - using DB-only mode (slower redirects)")
-else:
-    print("INFO: No REDIS_URL found - using DB-only mode")
+# ── Redis availability check for Limiter fallback ──
+_redis_url = app.config.get('REDIS_URL', 'redis://localhost:6379')
+_limiter_storage = _redis_url
+try:
+    _test_c = redis_lib.from_url(_redis_url, socket_connect_timeout=1)
+    _test_c.ping()
+except Exception:
+    _limiter_storage = "memory://"
+    print("Redis unavailable for Limiter -- falling back to memory storage")
 
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
     default_limits=["200 per minute"],
-    storage_uri=app.config.get('REDIS_URL') if REDIS_OK else "memory://",
+    storage_uri=_limiter_storage,
 )
 
 login_manager = LoginManager(app)
 login_manager.login_view = 'login_page'
+
+# ── Redis client ──────────────────────────────────────────────────
+try:
+    _redis = redis_lib.from_url(app.config.get('REDIS_URL', 'redis://localhost:6379'),
+                                 decode_responses=True, socket_connect_timeout=2)
+    _redis.ping()
+    REDIS_OK = True
+except Exception:
+    _redis = None
+    REDIS_OK = False
+    print("Redis unavailable -- using DB-only mode (slower redirects)")
 
 LINK_TTL = app.config.get('LINK_CACHE_TTL', 3600)
 
@@ -165,7 +171,7 @@ def require_api_key(f):
                 found = k; break
         if not found:
             return jsonify({'error': 'Invalid API key'}), 403
-        found.last_used = datetime.now(timezone.utc)
+        found.last_used = datetime.utcnow()
         db.session.commit()
         g.api_user_id = found.user_id
         return f(*args, **kwargs)
@@ -184,12 +190,6 @@ def login_page():
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
     return render_template('login.html')
-
-@app.route('/logout')
-def logout():
-    logout_user()
-    session.clear()
-    return redirect(url_for('index'))
 
 @app.route('/register')
 def register_page():
@@ -372,19 +372,14 @@ def api_register():
 @limiter.limit("20 per 15 minutes")
 def api_login():
     data = request.get_json()
-    credential = (data.get('credential') or data.get('email') or '').strip().lower()
-    password   = data.get('password', '')
-    
-    if not credential or not password:
-        return jsonify({'error': 'Username/Email and password required'}), 400
-        
-    # Search for user by email or username
-    user = User.query.filter(db.or_(User.email == credential, User.username == credential)).first()
-    
+    email    = (data.get('email') or '').strip().lower()
+    password = data.get('password', '')
+    if not email or not password:
+        return jsonify({'error': 'Email and password required'}), 400
+    user = User.query.filter_by(email=email).first()
     if not user or not user.check_password(password):
-        return jsonify({'error': 'Invalid credentials or password'}), 401
-        
-    login_user(user, remember=data.get('remember', False))
+        return jsonify({'error': 'Invalid email or password'}), 401
+    login_user(user, remember=True)
     return jsonify({'user': user.to_dict()})
 
 @app.route('/api/auth/logout', methods=['POST'])
@@ -564,9 +559,8 @@ def api_analytics_link(link_id):
     cnt = {}
     for c in clicks:
         if c.country: cnt[c.country] = cnt.get(c.country, 0) + 1
-    # items() returns an ItemsView, list() makes it a list for the linter
-    sorted_countries = sorted(list(cnt.items()), key=lambda x: x[1], reverse=True)[:10]
-    top_countries = [{'country': k, 'count': v} for k, v in sorted_countries]
+    top_countries = sorted(cnt.items(), key=lambda x: x[1], reverse=True)[:10]
+    top_countries = [{'country': k, 'count': v} for k, v in top_countries]
 
     # Devices
     dev = {}
@@ -580,8 +574,8 @@ def api_analytics_link(link_id):
     br = {}
     for c in clicks:
         b = c.browser or 'Unknown'; br[b] = br.get(b, 0) + 1
-    sorted_browsers = sorted(list(br.items()), key=lambda x: x[1], reverse=True)[:6]
-    browser_split = [{'browser': k, 'count': v} for k, v in sorted_browsers]
+    browser_split = sorted(br.items(), key=lambda x: x[1], reverse=True)[:6]
+    browser_split = [{'browser': k, 'count': v} for k, v in browser_split]
 
     # Referrers
     ref = {}
@@ -591,8 +585,8 @@ def api_analytics_link(link_id):
             try: r = urlparse(c.referrer).netloc.replace('www.', '') or 'Direct'
             except: pass
         ref[r] = ref.get(r, 0) + 1
-    sorted_referrers = sorted(list(ref.items()), key=lambda x: x[1], reverse=True)[:8]
-    top_referrers = [{'referrer': k, 'count': v} for k, v in sorted_referrers]
+    top_referrers = sorted(ref.items(), key=lambda x: x[1], reverse=True)[:8]
+    top_referrers = [{'referrer': k, 'count': v} for k, v in top_referrers]
 
     # A/B
     ab = None
@@ -747,7 +741,7 @@ def api_v1_delete(code):
 @app.route('/health')
 def health():
     return jsonify({'status': 'ok', 'redis': REDIS_OK,
-                    'timestamp': datetime.now(timezone.utc).isoformat()})
+                    'timestamp': datetime.utcnow().isoformat()})
 
 # ── Error handlers ────────────────────────────────────────────────
 @app.errorhandler(404)
@@ -764,6 +758,12 @@ def server_error(e):
                            msg='Something went wrong. Please try again.'), 500
 
 # ── Init DB + run ─────────────────────────────────────────────────
+with app.app_context():
+    db.create_all()
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(debug=app.config.get('DEBUG', True), host='0.0.0.0', port=port)
 with app.app_context():
     db.create_all()
 
