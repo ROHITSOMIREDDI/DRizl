@@ -30,13 +30,12 @@
       </div>
 
       <div class="table-wrap" id="linksTable" style="margin-top:20px">
-        <div class="d-thead">
+        <div class="d-thead" style="grid-template-columns:2fr 3fr 70px 80px 80px">
           <div class="d-th">Short link</div>
           <div class="d-th">Destination</div>
           <div class="d-th">Clicks</div>
           <div class="d-th">Status</div>
           <div class="d-th">Created</div>
-          <div class="d-th">Actions</div>
         </div>
         <div id="linksBody"><div style="padding:40px;text-align:center;color:var(--text3)"><div class="spinner" style="margin:0 auto"></div></div></div>
       </div>
@@ -46,6 +45,8 @@
 
 <!-- NEW LINK MODAL -->
 {% include "partials/new_link_modal.html" %}
+<!-- LINK DETAIL MODAL -->
+{% include "partials/link_detail_modal.html" %}
 {% endblock %}
 
 {% block extra_scripts %}
@@ -73,7 +74,9 @@ function renderLinks(links) {
     return;
   }
   body.innerHTML = filtered.map(l => `
-    <div class="table-row d-trow" style="display:grid;grid-template-columns:2fr 3fr 70px 80px 80px 90px;padding:12px 14px;align-items:center">
+    <div class="table-row d-trow" 
+         onclick='openLinkDetail(${JSON.stringify(l).replace(/'/g, "&apos;")})'
+         style="display:grid;grid-template-columns:2fr 3fr 70px 80px 80px;padding:12px 14px;align-items:center;cursor:pointer">
       <div>
         <div class="d-code mono">${l.short_code}</div>
         <div class="d-code-sub mono">${l.title || (l.custom_slug ? 'custom slug' : 'auto code')}</div>
@@ -85,12 +88,6 @@ function renderLinks(links) {
       </div>
       <div>${badgeHtml(l.status)}</div>
       <div style="font-size:11px;color:var(--text3)">${fmtDate(l.created_at)}</div>
-      <div style="display:flex;gap:4px">
-        <button class="d-act-btn" title="Copy" onclick="copyShort('${l.short_code}')">⎘</button>
-        <button class="d-act-btn" title="Analytics" onclick="location.href='/dashboard/analytics/${l.id}'">📊</button>
-        <button class="d-act-btn" title="QR Code" onclick="downloadQR('${l.id}','${l.short_code}')">⊞</button>
-        <button class="d-act-btn" title="Delete" onclick="deleteLink('${l.id}')" style="color:var(--red)">✕</button>
-      </div>
     </div>`).join('');
 }
 

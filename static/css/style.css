@@ -294,8 +294,9 @@ body[data-theme="dark"]::before { content: ''; position: fixed; inset: 0; backgr
 .table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
 .d-thead { display: grid; grid-template-columns: 2fr 3fr 70px 80px 80px 90px; padding: 12px 14px; background: var(--bg2); border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; }
 .d-th { padding: 0 4px; }
-.d-trow { border-bottom: 1px solid var(--border); transition: background 0.15s; }
-.d-trow:hover { background: var(--bg3); }
+.d-trow { border-bottom: 1px solid var(--border); transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); cursor: pointer; position: relative; }
+.d-trow:hover { background: var(--bg3); transform: scale(1.005); z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+.d-trow:active { transform: scale(0.998); }
 .d-trow:last-child { border-bottom: none; }
 .d-code { font-size: 13px; font-weight: 600; color: var(--accent2); }
 .d-code-sub { font-size: 10px; color: var(--text3); }

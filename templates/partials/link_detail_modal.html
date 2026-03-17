@@ -1,0 +1,106 @@
+<!-- LINK DETAIL MODAL -->
+<div class="modal-backdrop" id="linkDetailModal" style="display:none" onclick="if(event.target===this)closeLinkDetail()">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <div class="modal-title" id="ld-title">Link Details</div>
+      <button class="btn btn-ghost btn-sm" onclick="closeLinkDetail()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="text-align:center;margin-bottom:24px">
+        <div class="d-code mono" id="ld-short-url" style="font-size:24px;color:var(--primary);margin-bottom:8px">/short-code</div>
+        <div class="d-url" id="ld-long-url" style="color:var(--text3);font-size:14px;word-break:break-all">https://original-url.com</div>
+      </div>
+
+      <div class="stat-grid" style="grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
+        <div class="stat-card" style="padding:15px">
+          <div class="stat-label">Total Clicks</div>
+          <div class="stat-value" id="ld-clicks" style="font-size:20px">0</div>
+        </div>
+        <div class="stat-card" style="padding:15px">
+          <div class="stat-label">Status</div>
+          <div id="ld-status-badge"></div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
+        <button class="btn btn-secondary" onclick="copyFromDetail()" style="width:100%">⎘ Copy Link</button>
+        <button class="btn btn-secondary" id="ld-analytics-btn" style="width:100%">📊 View Analytics</button>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.03);border-radius:12px;padding:20px;text-align:center;border:1px solid rgba(255,255,255,0.05)">
+        <div class="stat-label" style="margin-bottom:12px">QR Code Preview</div>
+        <div id="ld-qr-container" style="background:#fff;padding:10px;border-radius:8px;display:inline-block;margin-bottom:12px;min-height:150px;min-width:150px">
+           <div class="spinner" style="border-color:var(--primary);margin:60px auto"></div>
+        </div>
+        <div>
+          <button class="btn btn-ghost btn-sm" onclick="downloadQRFromDetail()">↓ Download PNG</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content: space-between">
+      <button class="btn btn-ghost" style="color:var(--red)" onclick="deleteFromDetail()">✕ Delete Link</button>
+      <button class="btn btn-ghost" onclick="closeLinkDetail()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentDetailId = null;
+let currentDetailCode = null;
+
+function openLinkDetail(link) {
+  currentDetailId = link.id;
+  currentDetailCode = link.short_code;
+  
+  document.getElementById('ld-title').textContent = link.title || '/' + link.short_code;
+  document.getElementById('ld-short-url').textContent = window.location.origin.replace(/^https?:\/\//,'') + '/' + link.short_code;
+  document.getElementById('ld-long-url').textContent = link.original_url;
+  document.getElementById('ld-clicks').textContent = link.click_count.toLocaleString();
+  document.getElementById('ld-status-badge').innerHTML = badgeHtml(link.status);
+  
+  document.getElementById('ld-analytics-btn').onclick = () => location.href = '/dashboard/analytics/' + link.id;
+  
+  // Load QR
+  const qrContainer = document.getElementById('ld-qr-container');
+  qrContainer.innerHTML = '<div class="spinner" style="border-color:var(--primary);margin:60px auto"></div>';
+  
+  const img = new Image();
+  img.src = '/api/links/' + link.id + '/qr';
+  img.style.width = '150px';
+  img.style.height = '150px';
+  img.onload = () => {
+    qrContainer.innerHTML = '';
+    qrContainer.appendChild(img);
+  };
+
+  document.getElementById('linkDetailModal').style.display = 'flex';
+}
+
+function closeLinkDetail() {
+  document.getElementById('linkDetailModal').style.display = 'none';
+}
+
+async function copyFromDetail() {
+  await navigator.clipboard.writeText(window.location.origin + '/' + currentDetailCode).catch(()=>{});
+  showToast('Link copied!', 'success');
+}
+
+function downloadQRFromDetail() {
+  const a = document.createElement('a');
+  a.href = '/api/links/' + currentDetailId + '/qr?format=download';
+  a.download = 'qr-' + currentDetailCode + '.png';
+  a.click();
+}
+
+async function deleteFromDetail() {
+  if (!confirm('Delete this link? This cannot be undone.')) return;
+  const r = await fetch('/api/links/' + currentDetailId, {method:'DELETE'});
+  if (r.ok) { 
+    showToast('Link deleted', 'success'); 
+    closeLinkDetail();
+    if (typeof loadLinks === 'function') loadLinks(); 
+    if (typeof loadStats === 'function') loadStats(); 
+  }
+  else showToast('Delete failed', 'error');
+}
+</script>

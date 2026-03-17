@@ -1,5 +1,5 @@
 import os, re, json, random, secrets, string, io
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 from urllib.parse import urlparse
 
@@ -165,7 +165,7 @@ def require_api_key(f):
                 found = k; break
         if not found:
             return jsonify({'error': 'Invalid API key'}), 403
-        found.last_used = datetime.utcnow()
+        found.last_used = datetime.now(timezone.utc)
         db.session.commit()
         g.api_user_id = found.user_id
         return f(*args, **kwargs)
@@ -553,7 +553,8 @@ def api_analytics_link(link_id):
     cnt = {}
     for c in clicks:
         if c.country: cnt[c.country] = cnt.get(c.country, 0) + 1
-    sorted_countries = sorted(cnt.items(), key=lambda x: x[1], reverse=True)[:10]
+    # items() returns an ItemsView, list() makes it a list for the linter
+    sorted_countries = sorted(list(cnt.items()), key=lambda x: x[1], reverse=True)[:10]
     top_countries = [{'country': k, 'count': v} for k, v in sorted_countries]
 
     # Devices
@@ -568,7 +569,7 @@ def api_analytics_link(link_id):
     br = {}
     for c in clicks:
         b = c.browser or 'Unknown'; br[b] = br.get(b, 0) + 1
-    sorted_browsers = sorted(br.items(), key=lambda x: x[1], reverse=True)[:6]
+    sorted_browsers = sorted(list(br.items()), key=lambda x: x[1], reverse=True)[:6]
     browser_split = [{'browser': k, 'count': v} for k, v in sorted_browsers]
 
     # Referrers
@@ -579,7 +580,7 @@ def api_analytics_link(link_id):
             try: r = urlparse(c.referrer).netloc.replace('www.', '') or 'Direct'
             except: pass
         ref[r] = ref.get(r, 0) + 1
-    sorted_referrers = sorted(ref.items(), key=lambda x: x[1], reverse=True)[:8]
+    sorted_referrers = sorted(list(ref.items()), key=lambda x: x[1], reverse=True)[:8]
     top_referrers = [{'referrer': k, 'count': v} for k, v in sorted_referrers]
 
     # A/B
@@ -735,7 +736,7 @@ def api_v1_delete(code):
 @app.route('/health')
 def health():
     return jsonify({'status': 'ok', 'redis': REDIS_OK,
-                    'timestamp': datetime.utcnow().isoformat()})
+                    'timestamp': datetime.now(timezone.utc).isoformat()})
 
 # ── Error handlers ────────────────────────────────────────────────
 @app.errorhandler(404)
