@@ -171,13 +171,17 @@ function doHeroShorten() {
   if (!url) return;
   openNewLink();
   setTimeout(() => {
-    const modalInput = document.getElementById('longUrl');
+    const modalInput = document.getElementById('nl-url');
     if (modalInput) {
       modalInput.value = url;
-      // Trigger a visual confirmation if possible
+      modalInput.focus();
     }
   }, 100);
 }
+
+document.getElementById('heroUrlInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doHeroShorten();
+});
 
 loadStats(); loadLinks();
 </script>
