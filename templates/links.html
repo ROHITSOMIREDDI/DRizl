@@ -9,10 +9,14 @@
   <div class="d-main">
     <div class="d-topbar">
       <div class="d-topbar-title">My Links</div>
-      <div style="display:flex;gap:10px;align-items:center">
+      <div style="display:flex;gap:12px;align-items:center">
+        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Light/Dark Mode">
+          <span class="sun-icon">☀️</span>
+          <span class="moon-icon">🌙</span>
+        </button>
         <div class="d-search">
           <span style="color:var(--text3);font-size:14px">⌕</span>
-          <input id="searchInput" placeholder="Search links..." oninput="filterLinks(this.value)" />
+          <input id="searchInput" placeholder="Search links..." oninput="filterLinks(this.value)" autocomplete="off" />
         </div>
         <button class="btn btn-primary btn-sm" onclick="openNewLink()">+ New link</button>
       </div>

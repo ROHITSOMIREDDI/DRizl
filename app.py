@@ -185,6 +185,12 @@ def login_page():
         return redirect(url_for('dashboard'))
     return render_template('login.html')
 
+@app.route('/logout')
+def logout():
+    logout_user()
+    session.clear()
+    return redirect(url_for('index'))
+
 @app.route('/register')
 def register_page():
     if current_user.is_authenticated:
@@ -378,7 +384,7 @@ def api_login():
     if not user or not user.check_password(password):
         return jsonify({'error': 'Invalid credentials or password'}), 401
         
-    login_user(user, remember=True)
+    login_user(user, remember=data.get('remember', False))
     return jsonify({'user': user.to_dict()})
 
 @app.route('/api/auth/logout', methods=['POST'])

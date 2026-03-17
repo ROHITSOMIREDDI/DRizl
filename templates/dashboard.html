@@ -9,15 +9,32 @@
   <div class="d-main">
     <div class="d-topbar">
       <div class="d-topbar-title">Dashboard</div>
-      <div style="display:flex;gap:10px;align-items:center">
+      <div style="display:flex;gap:12px;align-items:center">
+        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Light/Dark Mode">
+          <span class="sun-icon">☀️</span>
+          <span class="moon-icon">🌙</span>
+        </button>
         <div class="d-search">
           <span style="color:var(--text3);font-size:14px">⌕</span>
-          <input id="searchInput" placeholder="Search links..." oninput="filterLinks(this.value)" />
+          <input id="searchInput" placeholder="Search links..." oninput="filterLinks(this.value)" autocomplete="off" />
         </div>
         <button class="btn btn-primary btn-sm" onclick="openNewLink()">+ New link</button>
       </div>
     </div>
     <div class="d-content">
+      <!-- PERSONALIZED HERO -->
+      <div class="d-hero">
+        <h1 class="d-hero-title">Welcome back, {{ current_user.username }}! ✨</h1>
+        <p class="d-hero-sub">Ready to shorten some links today?</p>
+        
+        <div class="d-hero-input-wrap">
+          <input class="d-hero-input" id="heroUrlInput" placeholder="Paste your long URL here..." autocomplete="off" />
+          <button class="btn btn-primary btn-sm" onclick="doHeroShorten()">Shorten →</button>
+        </div>
+        
+        <div class="d-hero-tagline">Drop the long. Share the short.</div>
+      </div>
+
       <!-- STAT CARDS -->
       <div class="stat-grid" id="statGrid">
         <div class="stat-card"><div class="stat-label">Total links</div><div class="stat-value" id="s-links">—</div><div class="stat-sub"><span class="stat-delta delta-up" id="s-links-d"></span></div></div>
@@ -147,6 +164,19 @@ function downloadQR(id, code) {
   a.href = '/api/links/' + id + '/qr?format=download';
   a.download = 'qr-' + code + '.png';
   a.click();
+}
+
+function doHeroShorten() {
+  const url = document.getElementById('heroUrlInput').value.trim();
+  if (!url) return;
+  openNewLink();
+  setTimeout(() => {
+    const modalInput = document.getElementById('longUrl');
+    if (modalInput) {
+      modalInput.value = url;
+      // Trigger a visual confirmation if possible
+    }
+  }, 100);
 }
 
 loadStats(); loadLinks();
