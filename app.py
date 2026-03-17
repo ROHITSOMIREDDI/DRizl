@@ -366,13 +366,18 @@ def api_register():
 @limiter.limit("20 per 15 minutes")
 def api_login():
     data = request.get_json()
-    email    = (data.get('email') or '').strip().lower()
-    password = data.get('password', '')
-    if not email or not password:
-        return jsonify({'error': 'Email and password required'}), 400
-    user = User.query.filter_by(email=email).first()
+    credential = (data.get('credential') or data.get('email') or '').strip().lower()
+    password   = data.get('password', '')
+    
+    if not credential or not password:
+        return jsonify({'error': 'Username/Email and password required'}), 400
+        
+    # Search for user by email or username
+    user = User.query.filter(db.or_(User.email == credential, User.username == credential)).first()
+    
     if not user or not user.check_password(password):
-        return jsonify({'error': 'Invalid email or password'}), 401
+        return jsonify({'error': 'Invalid credentials or password'}), 401
+        
     login_user(user, remember=True)
     return jsonify({'user': user.to_dict()})
 
