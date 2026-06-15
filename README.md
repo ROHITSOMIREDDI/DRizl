@@ -1,5 +1,7 @@
 # 🌧️ Drizl — Premium URL Shortener & Analytics
 
+[![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen?style=for-the-badge&logo=render)](https://drizl-shortener.onrender.com)
+
 Drizl is a full-stack, high-performance URL shortening platform designed for both speed and aesthetics. It empowers users to create shortened links with advanced targeting rules, real-time analytics, and personalized bio pages.
 
 ---
