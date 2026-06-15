@@ -19,6 +19,16 @@
           <input class="input" value="{{ user.username }}" disabled style="color:var(--text3)"/>
         </div>
       </div>
+
+      <div class="card" style="margin-bottom:24px">
+        <div style="font-family:var(--font-display);font-size:16px;font-weight:700;margin-bottom:16px">Profile Details</div>
+        <div id="settingsError" style="display:none;padding:10px 14px;background:var(--red-bg);border:1px solid rgba(248,113,113,0.2);border-radius:8px;color:var(--red);font-size:13px;margin-bottom:16px"></div>
+        <div class="form-group">
+          <label class="form-label">Display Name</label>
+          <input class="input" id="settings-displayname" value="{{ user.display_name or '' }}" placeholder="What should I call you?" />
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="saveSettings()" style="margin-top:8px">Save Changes</button>
+      </div>
       
       <div class="card">
         <div style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--red);margin-bottom:8px">Danger Zone</div>
@@ -28,4 +38,36 @@
     </div>
   </div>
 </div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+async function saveSettings() {
+  const errEl = document.getElementById('settingsError');
+  errEl.style.display = 'none';
+  const displayName = document.getElementById('settings-displayname').value.trim();
+  if (!displayName) {
+    errEl.textContent = 'Display name cannot be empty';
+    errEl.style.display = 'block';
+    return;
+  }
+  
+  try {
+    const r = await fetch('/api/user/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ display_name: displayName })
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      errEl.textContent = d.error || 'Failed to update settings';
+      errEl.style.display = 'block';
+      return;
+    }
+    showToast('Display name updated successfully!', 'success');
+  } catch (err) {
+    errEl.textContent = 'A network error occurred. Please try again.';
+    errEl.style.display = 'block';
+  }
+}
+</script>
 {% endblock %}

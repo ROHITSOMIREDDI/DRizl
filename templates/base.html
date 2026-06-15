@@ -24,6 +24,17 @@
 </head>
 <body>
   {% block body %}{% endblock %}
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script>
+    const firebaseConfig = {{ firebase_config | tojson }};
+    if (firebaseConfig.apiKey) {
+      firebase.initializeApp(firebaseConfig);
+    } else {
+      console.warn("Firebase Config is missing. Please check your .env variables.");
+    }
+  </script>
   <script src="{{ url_for('static', filename='js/main.js') }}"></script>
   {% block extra_scripts %}{% endblock %}
 </body>

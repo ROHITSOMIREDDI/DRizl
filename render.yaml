@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: drizl-shortener
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: FLASK_DEBUG
+        value: "false"
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: SHORT_URL_BASE
+        sync: false # Put your live Render URL here (e.g. https://drizl.onrender.com)
+      - key: FRONTEND_URL
+        sync: false # Same as SHORT_URL_BASE
+      
+      # Database Connection (Neon)
+      - key: DATABASE_URL
+        sync: false # Paste your Neon PostgreSQL connection string here (port 5432)
+
+      # Firebase Web Config (Client-side)
+      - key: FIREBASE_API_KEY
+        sync: false
+      - key: FIREBASE_AUTH_DOMAIN
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_STORAGE_BUCKET
+        sync: false
+      - key: FIREBASE_MESSAGING_SENDER_ID
+        sync: false
+      - key: FIREBASE_APP_ID
+        sync: false
+
+      # Firebase Admin SDK (Backend Server - paste the content of service account json file as text)
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false

@@ -1329,6 +1329,91 @@ body[data-theme="dark"]::before {
   margin-left: 8px;
 }
 
+.d-search-suggestions {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 320px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+  max-height: 280px;
+  overflow-y: auto;
+  z-index: 10000;
+  display: none;
+  backdrop-filter: blur(10px);
+}
+
+.d-suggestion-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.d-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.d-suggestion-item:hover,
+.d-suggestion-item.active {
+  background: var(--accent-light);
+}
+
+.d-suggestion-item.active .d-suggestion-code {
+  color: var(--accent2);
+}
+
+.d-suggestion-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 75%;
+}
+
+.d-suggestion-code {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.d-suggestion-title {
+  font-size: 11px;
+  color: var(--text3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.d-suggestion-url {
+  font-size: 11px;
+  color: var(--text2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.d-suggestion-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.d-suggestion-clicks {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+}
+
 .d-content {
   flex: 1;
   overflow-y: auto;
@@ -1681,8 +1766,8 @@ body[data-theme="dark"]::before {
   box-shadow: var(--shadow);
 }
 
-/* ── BIO PAGE (PUBLIC) ────────────────────── */
-.bio-page {
+/* ── PROFILE PAGE (PUBLIC) ────────────────── */
+.profile-page {
   min-height: 100vh;
   background: var(--bg);
   display: flex;
@@ -1690,13 +1775,13 @@ body[data-theme="dark"]::before {
   padding: 60px 20px;
 }
 
-.bio-wrap {
+.profile-wrap {
   width: 100%;
   max-width: 600px;
   animation: fadeUp 0.5s ease both;
 }
 
-.bio-header {
+.profile-header {
   text-align: center;
   margin-bottom: 40px;
 }
@@ -1737,7 +1822,7 @@ body[data-theme="dark"]::before {
   border-radius: 50%;
 }
 
-.bio-username {
+.profile-username {
   font-size: 14px;
   font-weight: 600;
   color: var(--accent2);
@@ -1745,7 +1830,7 @@ body[data-theme="dark"]::before {
   margin-bottom: 4px;
 }
 
-.bio-name {
+.profile-name {
   font-family: var(--font-display);
   font-size: 28px;
   font-weight: 800;
@@ -1753,7 +1838,7 @@ body[data-theme="dark"]::before {
   margin-bottom: 8px;
 }
 
-.bio-text {
+.profile-text {
   font-size: 15px;
   color: var(--text2);
   max-width: 400px;
@@ -1761,14 +1846,14 @@ body[data-theme="dark"]::before {
   line-height: 1.5;
 }
 
-.bio-tags {
+.profile-tags {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 8px;
 }
 
-.bio-tag {
+.profile-tag {
   padding: 4px 12px;
   background: var(--bg2);
   border: 1px solid var(--border);
@@ -1797,7 +1882,7 @@ body[data-theme="dark"]::before {
   margin-bottom: 8px;
 }
 
-.bio-link {
+.profile-link {
   display: flex;
   align-items: center;
   gap: 16px;
@@ -1811,20 +1896,20 @@ body[data-theme="dark"]::before {
   overflow: hidden;
 }
 
-.bio-link:hover {
+.profile-link:hover {
   transform: scale(1.02);
   border-color: var(--accent);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   background: var(--card2);
 }
 
-.bio-link.featured {
+.profile-link.featured {
   padding: 20px;
   border-color: var(--accent);
   background: linear-gradient(135deg, rgba(124, 111, 255, 0.05), rgba(124, 111, 255, 0.02));
 }
 
-.bio-link.featured::before {
+.profile-link.featured::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -1895,12 +1980,12 @@ body[data-theme="dark"]::before {
   padding-right: 8px;
 }
 
-.bio-link:hover .link-arrow {
+.profile-link:hover .link-arrow {
   transform: translate(4px, -4px);
   color: var(--accent2);
 }
 
-.bio-footer {
+.profile-footer {
   text-align: center;
   margin-top: 48px;
   padding-top: 24px;

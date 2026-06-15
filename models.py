@@ -12,30 +12,37 @@ def gen_uuid():
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
-    id           = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    id           = db.Column(db.String(128), primary_key=True, default=gen_uuid)
     email        = db.Column(db.String(255), unique=True, nullable=False)
     username     = db.Column(db.String(50), unique=True, nullable=False)
-    password_hash= db.Column(db.String(255), nullable=False)
+    display_name = db.Column(db.String(100), nullable=True)
+    password_hash= db.Column(db.String(255), nullable=True)
     created_at   = db.Column(db.DateTime, default=datetime.utcnow)
 
     links        = db.relationship('Link', back_populates='user', cascade='all, delete-orphan')
-    api_keys     = db.relationship('APIKey', back_populates='user', cascade='all, delete-orphan')
-    bio_page     = db.relationship('BioPage', back_populates='user', uselist=False, cascade='all, delete-orphan')
 
     def set_password(self, password):
         self.password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
     def check_password(self, password):
+        if not self.password_hash:
+            return False
         return bcrypt.checkpw(password.encode(), self.password_hash.encode())
 
     def to_dict(self):
-        return {'id': self.id, 'email': self.email, 'username': self.username, 'created_at': self.created_at.isoformat()}
+        return {
+            'id': self.id,
+            'email': self.email,
+            'username': self.username,
+            'display_name': self.display_name,
+            'created_at': self.created_at.isoformat()
+        }
 
 
 class Link(db.Model):
     __tablename__ = 'links'
     id            = db.Column(db.String(36), primary_key=True, default=gen_uuid)
-    user_id       = db.Column(db.String(36), db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    user_id       = db.Column(db.String(128), db.ForeignKey('users.id', ondelete='CASCADE'), nullable=True)
     short_code    = db.Column(db.String(50), unique=True, nullable=False, index=True)
     original_url  = db.Column(db.Text, nullable=False)
     custom_slug   = db.Column(db.Boolean, default=False)
@@ -114,50 +121,3 @@ class Click(db.Model):
     clicked_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
 
     link = db.relationship('Link', back_populates='clicks')
-
-
-class APIKey(db.Model):
-    __tablename__ = 'api_keys'
-    id          = db.Column(db.String(36), primary_key=True, default=gen_uuid)
-    user_id     = db.Column(db.String(36), db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
-    name        = db.Column(db.String(100), nullable=False)
-    key_hash    = db.Column(db.String(255), unique=True, nullable=False, index=True)
-    key_prefix  = db.Column(db.String(20), nullable=False)
-    is_active   = db.Column(db.Boolean, default=True)
-    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
-    last_used   = db.Column(db.DateTime, nullable=True)
-
-    user = db.relationship('User', back_populates='api_keys')
-
-    def check_key(self, raw_key):
-        return bcrypt.checkpw(raw_key.encode(), self.key_hash.encode())
-
-    def to_dict(self):
-        return {'id': self.id, 'name': self.name, 'key_prefix': self.key_prefix,
-                'is_active': self.is_active, 'created_at': self.created_at.isoformat(),
-                'last_used': self.last_used.isoformat() if self.last_used else None}
-
-
-class BioPage(db.Model):
-    __tablename__ = 'bio_pages'
-    id             = db.Column(db.String(36), primary_key=True, default=gen_uuid)
-    user_id        = db.Column(db.String(36), db.ForeignKey('users.id', ondelete='CASCADE'), unique=True, nullable=False)
-    username       = db.Column(db.String(50), unique=True, nullable=False, index=True)
-    display_name   = db.Column(db.String(100), nullable=False)
-    bio            = db.Column(db.Text, nullable=True)
-    avatar_initial = db.Column(db.String(2), nullable=False, default='D')
-    tags           = db.Column(db.JSON, nullable=True)      # list of strings
-    links          = db.Column(db.JSON, nullable=False, default=list)
-    featured       = db.Column(db.Integer, nullable=True)   # index of featured link
-    created_at     = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at     = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    user = db.relationship('User', back_populates='bio_page')
-
-    def to_dict(self):
-        return {
-            'id': self.id, 'username': self.username,
-            'display_name': self.display_name, 'bio': self.bio,
-            'avatar_initial': self.avatar_initial, 'tags': self.tags or [],
-            'links': self.links or [], 'featured': self.featured,
-        }

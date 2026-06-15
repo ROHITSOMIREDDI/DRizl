@@ -26,7 +26,8 @@
         </div>
         <div class="d-search">
           <span style="color:var(--text3);font-size:14px">⌕</span>
-          <input id="searchInput" placeholder="Search links..." oninput="filterLinks(this.value)" autocomplete="off" />
+          <input id="searchInput" placeholder="Search links..." oninput="filterLinks(this.value); updateSearchSuggestions(this.value)" onfocus="showSuggestions()" onblur="hideSuggestions()" onkeydown="handleSearchKeydown(event)" autocomplete="off" />
+          <div id="searchSuggestions" class="d-search-suggestions"></div>
         </div>
         <button class="btn btn-primary btn-sm" onclick="openNewLink()">+ New link</button>
       </div>
@@ -34,7 +35,7 @@
     <div class="d-content">
       <!-- PERSONALIZED GREETING -->
       <div class="d-greeting animate-fadeUp">
-        <h1 class="d-greeting-title">Welcome back, {{ current_user.username }}! ✨</h1>
+        <h1 class="d-greeting-title">Welcome back, <span id="greeting-name">{{ current_user.display_name if current_user.display_name else current_user.username }}</span>! ✨</h1>
         <p class="d-greeting-sub">Manage your links and track their performance.</p>
       </div>
 
@@ -156,9 +157,124 @@ function setFilter(f, btn) {
   renderLinks(allLinks);
 }
 
+let activeSuggestionIndex = -1;
+
+function updateSearchSuggestions(q) {
+  const container = document.getElementById('searchSuggestions');
+  if (!container) return;
+
+  const query = q.trim().toLowerCase();
+  
+  // Filter links
+  const filtered = allLinks.filter(l =>
+    l.short_code.toLowerCase().includes(query) || 
+    l.original_url.toLowerCase().includes(query) || 
+    (l.title || '').toLowerCase().includes(query)
+  );
+
+  activeSuggestionIndex = -1; // reset key selection
+
+  if (query === '') {
+    // If query is empty, show the first 5 links as "Recent Links" suggestion
+    if (allLinks.length === 0) {
+      container.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text3);font-size:13px">No links available</div>';
+    } else {
+      const recent = allLinks.slice(0, 5);
+      container.innerHTML = `
+        <div style="padding:8px 14px 4px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border)">Recent Links</div>
+        ${recent.map((l, idx) => renderSuggestionItemHtml(l, idx)).join('')}
+      `;
+    }
+  } else {
+    if (filtered.length === 0) {
+      container.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text3);font-size:13px">No matches found</div>';
+    } else {
+      container.innerHTML = filtered.map((l, idx) => renderSuggestionItemHtml(l, idx)).join('');
+    }
+  }
+
+  container.style.display = 'block';
+}
+
+function renderSuggestionItemHtml(l, idx) {
+  // Safe serialization for click handler
+  const serialized = JSON.stringify(l).replace(/'/g, "&apos;").replace(/"/g, '&quot;');
+  return `
+    <div class="d-suggestion-item" data-index="${idx}" onclick="selectSuggestion('${serialized}')">
+      <div class="d-suggestion-info">
+        <div class="d-suggestion-code">/${l.short_code}</div>
+        <div class="d-suggestion-title">${l.title || 'Untitled Link'}</div>
+        <div class="d-suggestion-url" title="${l.original_url}">${l.original_url}</div>
+      </div>
+      <div class="d-suggestion-meta">
+        <div class="d-suggestion-clicks">${l.click_count.toLocaleString()} clicks</div>
+      </div>
+    </div>
+  `;
+}
+
+function selectSuggestion(lJsonStr) {
+  const l = JSON.parse(lJsonStr.replace(/&apos;/g, "'").replace(/&quot;/g, '"'));
+  openLinkDetail(l);
+  hideSuggestions();
+}
+
+function hideSuggestions() {
+  setTimeout(() => {
+    const container = document.getElementById('searchSuggestions');
+    if (container) container.style.display = 'none';
+  }, 200); // delay to allow click events to register
+}
+
+function showSuggestions() {
+  const input = document.getElementById('searchInput');
+  if (input) {
+    updateSearchSuggestions(input.value);
+  }
+}
+
+function handleSearchKeydown(e) {
+  const container = document.getElementById('searchSuggestions');
+  if (!container || container.style.display === 'none') return;
+
+  const items = container.querySelectorAll('.d-suggestion-item');
+  if (items.length === 0) return;
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    activeSuggestionIndex = (activeSuggestionIndex + 1) % items.length;
+    highlightSuggestion(items);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    activeSuggestionIndex = (activeSuggestionIndex - 1 + items.length) % items.length;
+    highlightSuggestion(items);
+  } else if (e.key === 'Enter') {
+    if (activeSuggestionIndex >= 0 && activeSuggestionIndex < items.length) {
+      e.preventDefault();
+      items[activeSuggestionIndex].click();
+    }
+  } else if (e.key === 'Escape') {
+    hideSuggestions();
+  }
+}
+
+function highlightSuggestion(items) {
+  items.forEach((item, idx) => {
+    if (idx === activeSuggestionIndex) {
+      item.classList.add('active');
+      item.scrollIntoView({ block: 'nearest' });
+    } else {
+      item.classList.remove('active');
+    }
+  });
+}
+
 function filterLinks(q) {
   const filtered = allLinks.filter(l =>
-    l.short_code.includes(q) || l.original_url.includes(q) || (l.title||'').includes(q));
+    l.short_code.toLowerCase().includes(q.toLowerCase()) || 
+    l.original_url.toLowerCase().includes(q.toLowerCase()) || 
+    (l.title||'').toLowerCase().includes(q.toLowerCase())
+  );
   renderLinks(filtered);
 }
 
@@ -193,5 +309,56 @@ function doHeroShorten() {
     }, 100);
   }
 }
+
+async function saveOnboardingName() {
+  const errEl = document.getElementById('onboardingError');
+  errEl.style.display = 'none';
+  const displayName = document.getElementById('onboarding-displayname').value.trim();
+  if (!displayName) {
+    errEl.textContent = 'Please enter a display name';
+    errEl.style.display = 'block';
+    return;
+  }
+  
+  try {
+    const r = await fetch('/api/user/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ display_name: displayName })
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      errEl.textContent = d.error || 'Failed to save name';
+      errEl.style.display = 'block';
+      return;
+    }
+    
+    // Update dashboard greeting
+    document.getElementById('greeting-name').textContent = displayName;
+    
+    // Hide modal
+    const modal = document.getElementById('onboardingModal');
+    if (modal) modal.style.display = 'none';
+    showToast('Welcome, ' + displayName + '!', 'success');
+  } catch (err) {
+    errEl.textContent = 'A network error occurred. Please try again.';
+    errEl.style.display = 'block';
+  }
+}
 </script>
+
+{% if not current_user.display_name %}
+<!-- ONBOARDING DISPLAY NAME MODAL -->
+<div id="onboardingModal" class="modal-backdrop" style="display: flex; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); z-index: 9999;">
+  <div class="card animate-fadeUp" style="width: 100%; max-width: 420px; padding: 32px; background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.4);">
+    <div style="font-family: var(--font-display); font-size: 22px; font-weight: 800; text-align: center; margin-bottom: 12px; color: #fff;">Welcome to Drizl!</div>
+    <div style="font-size: 14px; color: var(--text2); text-align: center; margin-bottom: 24px; line-height: 1.5;">What should I call you?</div>
+    <div id="onboardingError" style="display: none; padding: 10px 14px; background: var(--red-bg); border: 1px solid rgba(248,113,113,0.2); border-radius: 8px; color: var(--red); font-size: 13px; margin-bottom: 16px;"></div>
+    <div class="form-group">
+      <input class="input" id="onboarding-displayname" placeholder="e.g., John Doe" style="text-align: center; font-size: 16px; padding: 12px; height: 48px;" onkeydown="if(event.key==='Enter') saveOnboardingName()" />
+    </div>
+    <button class="btn btn-primary" onclick="saveOnboardingName()" style="width: 100%; height: 48px; font-size: 15px; font-weight: 600; margin-top: 16px; display: flex; align-items: center; justify-content: center;">Continue</button>
+  </div>
+</div>
+{% endif %}
 {% endblock %}

@@ -8,3 +8,22 @@ build/
 *.log
 prisma/migrations/*.sql.bak
 coverage/
+
+# Python-specific
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+ENV/
+instance/
+*.db
+*.sqlite
+.pytest_cache/
+
+# Firebase Service Account (NEVER commit this!)
+firebase-service-account.json
+firebase-service-account.json.json
+*-firebase-adminsdk-*.json
+
+# Ignore PowerPoint slides
+*.pptx

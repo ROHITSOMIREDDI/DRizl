@@ -37,7 +37,7 @@
     <button class="l-shorten-btn" id="shortenBtn" onclick="doShorten()">Shorten →</button>
   </div>
   <div class="l-result" id="result">
-    <span class="l-result-link" id="resultLink"></span>
+    <a class="l-result-link" id="resultLink" target="_blank" style="text-decoration:none;transition:color 0.2s"></a>
     <button class="l-copy-btn" id="copyBtn" onclick="copyLink()">Copy link</button>
   </div>
   <p class="l-note animate-fadeUp" style="animation-delay:.4s">No account needed to try · Free forever · 56 billion possible links</p>
@@ -150,29 +150,99 @@
   <div style="font-size: 11px; color: var(--text3); margin-top: 16px; letter-spacing: 0.05em; text-transform: uppercase">Drop the long. Share the short.</div>
 </footer>
 
+<!-- LIMIT EXCEEDED MODAL -->
+<div id="limitModal" class="modal-backdrop" style="display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); z-index: 9999;">
+  <div class="card animate-fadeUp" style="width: 100%; max-width: 440px; padding: 32px; background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); text-align: center;">
+    <div style="font-size: 48px; margin-bottom: 16px;">🚀</div>
+    <div style="font-family: var(--font-display); font-size: 22px; font-weight: 800; margin-bottom: 12px; color: #fff;">Free Limit Reached!</div>
+    <p style="font-size: 14px; color: var(--text2); margin-bottom: 24px; line-height: 1.5;">
+      You have used your 3 free shortens. Sign up for a free account to get unlimited shortenings, real-time analytics, A/B testing, and more!
+    </p>
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <a href="/register" class="btn btn-primary" style="width: 100%; height: 44px; display: flex; align-items: center; justify-content: center; font-family: var(--font-display)">Sign Up Free →</a>
+      <a href="/login" class="btn btn-secondary" style="width: 100%; height: 44px; display: flex; align-items: center; justify-content: center; font-family: var(--font-display)">Sign In</a>
+      <button class="btn btn-ghost" onclick="closeLimitModal()" style="width: 100%; height: 40px; font-family: var(--font-display)">Maybe Later</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .l-result-link:hover {
+    color: var(--accent2) !important;
+    text-decoration: underline !important;
+  }
+</style>
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
-const CODES = ['x7Kp2','mN3Qr','pL9Wz','kR2Vx','jT5Ym'];
 let copied = false;
 
-function doShorten() {
-  const val = document.getElementById('urlInput').value.trim();
+async function doShorten() {
+  const urlInput = document.getElementById('urlInput');
+  const val = urlInput.value.trim();
   if (!val) return;
-  const code = CODES[Math.floor(Math.random() * CODES.length)];
-  document.getElementById('resultLink').textContent = window.location.host + '/' + code;
-  document.getElementById('result').classList.add('show');
-  document.getElementById('urlInput').value = '';
+  
+  const shortenBtn = document.getElementById('shortenBtn');
+  shortenBtn.disabled = true;
+  shortenBtn.textContent = 'Shortening...';
+  
+  try {
+    const r = await fetch('/api/public/shorten', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: val })
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      if (r.status === 403) {
+        showLimitModal();
+      } else {
+        alert(d.error || 'Shortening failed. Please try again.');
+      }
+      return;
+    }
+    
+    let absoluteUrl = d.short_url;
+    // Map localhost or 127.0.0.1 configured base URLs to current browser origin
+    if (absoluteUrl.includes('localhost:5000') || absoluteUrl.includes('127.0.0.1:5000')) {
+      const code = absoluteUrl.split('/').pop();
+      absoluteUrl = window.location.origin + '/' + code;
+    }
+    
+    const cleanUrl = absoluteUrl.replace(/^https?:\/\//, '');
+    const resultLink = document.getElementById('resultLink');
+    resultLink.textContent = cleanUrl;
+    resultLink.href = absoluteUrl;
+    
+    document.getElementById('result').classList.add('show');
+    urlInput.value = '';
+  } catch (err) {
+    alert('A network error occurred. Please try again.');
+  } finally {
+    shortenBtn.disabled = false;
+    shortenBtn.textContent = 'Shorten →';
+  }
 }
 
 function copyLink() {
   if (copied) return;
-  const txt = document.getElementById('resultLink').textContent;
-  navigator.clipboard?.writeText('http://' + txt).catch(() => {});
+  const linkEl = document.getElementById('resultLink');
+  const txt = linkEl.href;
+  if (!txt) return;
+  
+  navigator.clipboard?.writeText(txt).catch(() => {});
   const btn = document.getElementById('copyBtn');
   btn.textContent = 'Copied!'; copied = true;
   setTimeout(() => { btn.textContent = 'Copy link'; copied = false; }, 2000);
+}
+
+function showLimitModal() {
+  document.getElementById('limitModal').style.display = 'flex';
+}
+
+function closeLimitModal() {
+  document.getElementById('limitModal').style.display = 'none';
 }
 
 document.getElementById('urlInput').addEventListener('keydown', e => { if (e.key === 'Enter') doShorten(); });
