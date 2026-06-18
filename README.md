@@ -28,10 +28,6 @@ Drizl is a full-stack, high-performance URL shortening platform designed for bot
 - **Demographics**: Breakdown by Top Countries, Browser types, and Device platforms.
 - **Referrer Tracking**: See exactly where your traffic is coming from.
 
-### 📱 Social Bio Pages
-- **Custom Bio Sections**: Create a personalized "Link-in-bio" page with custom icons and featured links.
-- **Visual Editor**: Real-time management of your public profile.
-
 ### 🛠 Developer API (v1)
 - **Rest API**: Programmatically shorten, list, and delete links.
 - **Secure Keys**: Manage multiple API keys with granular revocation.
